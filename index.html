@@ -1,0 +1,2504 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Vigilia di Natale — Sala e conti</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#15131E;
+    --surface:#1F1C2B;
+    --surface-2:#282436;
+    --line:#38334C;
+    --text:#EFE9DE;
+    --muted:#9A93AE;
+    --amber:#F2A03D;
+    --amber-soft:rgba(242,160,61,.16);
+    --viola:#9B8CFF;
+    --viola-soft:rgba(155,140,255,.16);
+    --verde:#4FC3A1;
+    --rosso:#E45B6D;
+    --legno:#6B4E36;
+    --r:10px;
+    --tela:#0E0D14;
+    --legno-a:#4A3826; --legno-b:#3A2C1E;
+    --tl-a:#4A3826; --tl-b:#3A2C1E; --tl-bordo:#3A2C1E;
+    --tp-a:#6A4F2C; --tp-b:#4A3826; --tp-bordo:#6A4F2C;
+    --tf-a:#8A5F24; --tf-b:#5C3F1C; --tf-bordo:#F2A03D;
+    --t-testo:#EFE9DE; --t-occ:#F2A03D; --t-occ-pieno:#FFD9A6; --t-ombra:rgba(0,0,0,.35);
+  }
+  html[data-tema="chiaro"]{
+    --ink:#F5F2EB;
+    --surface:#FFFFFF;
+    --surface-2:#F0ECE3;
+    --line:#DDD6C8;
+    --text:#26232C;
+    --muted:#7B7488;
+    --amber:#C0761A;
+    --amber-soft:rgba(192,118,26,.14);
+    --viola:#6A5AD8;
+    --viola-soft:rgba(106,90,216,.14);
+    --verde:#1B9B78;
+    --rosso:#C63C4E;
+    --tela:#ECE7DC;
+    --legno-a:#B99164; --legno-b:#A67F53;
+    --tl-a:#FFFFFF; --tl-b:#F8F4EC; --tl-bordo:#D6CCBA;
+    --tp-a:#FCEDD6; --tp-b:#F7DFBC; --tp-bordo:#E2B878;
+    --tf-a:#F2CD92; --tf-b:#E9B66E; --tf-bordo:#C0761A;
+    --t-testo:#2A2016; --t-occ:#9A5A0E; --t-occ-pieno:#5E3304; --t-ombra:rgba(60,40,10,.12);
+  }
+  html[data-tema="chiaro"] .btn:not(.ghost):not(.danger){color:#FFF8EC}
+  html[data-tema="chiaro"]{color-scheme:light}
+  html[data-tema="chiaro"] .orario-mini{color-scheme:light}
+  html[data-tema="chiaro"] .banner{color:#FFF8EC}
+  html[data-tema="chiaro"] .top{background:linear-gradient(180deg,var(--ink) 72%,rgba(245,242,235,.86))}
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--ink);
+    color:var(--text);
+    font-family:"IBM Plex Sans",system-ui,sans-serif;
+    font-size:14px;
+    -webkit-text-size-adjust:100%;
+  }
+  button,input,select,textarea{font:inherit;color:inherit}
+  button{cursor:pointer;border:none;background:none}
+  :focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+  .app{max-width:1600px;margin:0 auto;padding:0 16px 80px}
+
+  /* ---------- Testata ---------- */
+  .top{
+    position:sticky;top:0;z-index:40;
+    background:linear-gradient(180deg,var(--ink) 72%,rgba(21,19,30,.86));
+    backdrop-filter:blur(6px);
+    padding:14px 0 10px;
+    border-bottom:1px solid var(--line);
+  }
+  .top-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .brand{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:22px;letter-spacing:-.02em;line-height:1;margin:0}
+  .brand span{color:var(--amber)}
+  .brand small{display:block;font-family:"IBM Plex Mono",monospace;font-weight:500;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-top:5px}
+  .spacer{flex:1}
+
+
+  .stats{display:flex;gap:8px;flex-wrap:wrap}
+  .stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:7px 12px;min-width:82px}
+  .stat b{display:block;font-family:"IBM Plex Mono",monospace;font-size:19px;font-weight:600;line-height:1.1}
+  .stat i{font-style:normal;font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+  .stat.ok b{color:var(--verde)} .stat.warn b{color:var(--amber)} .stat.bad b{color:var(--rosso)}
+
+  .tabs{display:flex;gap:2px;margin-top:12px;overflow-x:auto;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{padding:8px 14px;border-radius:8px 8px 0 0;color:var(--muted);font-weight:500;white-space:nowrap;border-bottom:2px solid transparent}
+  .tab.on{color:var(--text);border-bottom-color:var(--amber);background:var(--surface)}
+
+  .cloud{display:flex;align-items:center;gap:6px;font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted)}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--muted)}
+  .dot.live{background:var(--verde);box-shadow:0 0 0 3px rgba(79,195,161,.18)}
+  .dot.local{background:var(--amber)}
+
+  /* ---------- Layout ---------- */
+  .split{display:grid;grid-template-columns:340px 1fr;gap:16px;margin-top:16px;align-items:start}
+  @media(max-width:1000px){.split,.split.due{grid-template-columns:1fr}}
+  .split.due{grid-template-columns:1fr 1fr}
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+  .panel h2{font-family:"Bricolage Grotesque",sans-serif;font-size:15px;font-weight:700;margin:0 0 10px;letter-spacing:-.01em}
+  .hint{color:var(--muted);font-size:12px;line-height:1.5}
+
+  /* ---------- Campi ---------- */
+  .field{display:flex;flex-direction:column;gap:4px;margin-bottom:9px}
+  .field label{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  input,select,textarea{
+    background:var(--ink);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%;
+  }
+  input:focus,select:focus,textarea:focus{border-color:var(--amber);outline:none}
+  textarea{resize:vertical;min-height:54px}
+  .row{display:flex;gap:8px}
+  .row>*{flex:1;margin-bottom:0}
+  .stepper{display:flex;align-items:center;gap:6px}
+  .stepper input{flex:1;min-width:0;text-align:center;-moz-appearance:textfield}
+  .stepper input::-webkit-outer-spin-button,.stepper input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .stepper button{
+    flex:0 0 36px;width:36px;height:36px;border:1px solid var(--line);border-radius:8px;
+    background:var(--ink);color:var(--text);font-size:17px;line-height:1;font-weight:600;
+  }
+  .stepper button:hover{border-color:var(--amber);color:var(--amber)}
+  input[type=checkbox]{width:auto;accent-color:var(--amber)}
+  .sez-perm{border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:8px}
+  .sez-perm-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .check{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer}
+  .chip-perm{border:1px solid var(--line);border-radius:999px;padding:5px 11px;font-size:12px;color:var(--muted)}
+  .chip-perm.on{border-color:var(--amber);color:var(--amber)}
+  .btn{background:var(--amber);color:#231703;border-radius:8px;padding:10px 14px;font-weight:600;transition:.15s}
+  .btn:hover{filter:brightness(1.08)}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text)}
+  .btn.ghost:hover{border-color:var(--amber);color:var(--amber)}
+  .btn.danger{background:transparent;border:1px solid rgba(228,91,109,.5);color:var(--rosso)}
+  .btn.sm{padding:6px 10px;font-size:12px}
+  .btn.block{width:100%}
+
+  /* ---------- Prenotazioni ---------- */
+  .search{margin-bottom:10px}
+  .filtri{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+  .chip{padding:5px 10px;border-radius:99px;border:1px solid var(--line);font-size:12px;color:var(--muted)}
+  .chip.on{border-color:var(--amber);color:var(--amber);background:var(--amber-soft)}
+
+  .lista{display:flex;flex-direction:column;gap:7px;max-height:calc(100vh - 300px);overflow-y:auto;padding-right:2px}
+  .pren{
+    background:var(--surface-2);border:1px solid var(--line);border-left:3px solid var(--line);
+    border-radius:8px;padding:9px 10px;transition:.15s;
+  }
+  .pren:hover{border-color:var(--muted)}
+  .pren.sel{border-color:var(--amber);border-left-color:var(--amber);background:var(--amber-soft)}
+  .pren.done{border-left-color:var(--verde)}
+  .pren.annullata{opacity:.45;text-decoration:line-through}
+  .pren-top{display:flex;align-items:baseline;gap:8px}
+  .pren-nome{font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pax{font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--amber)}
+  .pren-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:5px;font-size:11px;color:var(--muted);align-items:center}
+  .tag{font-family:"IBM Plex Mono",monospace;font-size:11px;background:var(--ink);border:1px solid var(--line);border-radius:5px;padding:2px 7px;white-space:nowrap;line-height:1.5;flex:0 0 auto}
+  .tag.manca{color:var(--rosso);border-color:rgba(228,91,109,.5)}
+  .tag.tvl.clic{cursor:pointer}
+  .tag.tvl.clic:hover{background:var(--amber-soft);border-color:var(--amber)}
+  .plan-cerca{width:180px;flex:0 0 auto;padding:6px 10px;font-size:13px}
+  .plan-avviso{flex:0 0 auto;display:flex;align-items:center;gap:8px;background:rgba(228,91,109,.12);border:1px solid rgba(228,91,109,.45);border-radius:8px;padding:4px 6px 4px 10px;font-size:12px;color:var(--rosso)}
+  .tag.tvl{border-color:rgba(242,160,61,.45);color:var(--amber)}
+  .tag.ricavo{border-color:rgba(79,195,161,.45);color:var(--verde)}
+  .tag.costo{border-color:rgba(228,91,109,.45);color:var(--rosso)}
+  .tag.prelievo{border-color:rgba(155,140,255,.5);color:var(--viola)}
+  .tag.fondo{border-color:rgba(155,140,255,.5);color:var(--viola);border-style:dashed}
+  .pren-actions{display:flex;gap:5px;margin-top:8px}
+
+  /* ---------- Costi & Ricavi ---------- */
+  .imp{font-family:"IBM Plex Mono",monospace;font-weight:600}
+  .imp.pos{color:var(--verde)} .imp.neg{color:var(--rosso)}
+  .imp.muted{color:var(--muted);font-weight:500}
+  .fin-riga{cursor:pointer}
+  .fin-riga:hover td{background:var(--surface-2)}
+  .fin-cat{font-weight:600}
+  .fin-sub{color:var(--muted);font-size:11px;margin-top:2px}
+  .segcaps{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+  .segcaps button:not(.btn){padding:7px 13px;border-radius:99px;border:1px solid var(--line);font-size:12px;color:var(--muted);font-weight:600}
+  .segcaps button.on{border-color:var(--amber);color:var(--amber);background:var(--amber-soft)}
+
+  /* ---------- Piantina ---------- */
+  .plan-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+  .plan-wrap{
+    position:relative;overflow:auto;border:1px solid var(--line);border-radius:var(--r);
+    background:var(--ink);background-image:radial-gradient(rgba(255,255,255,.05) 1px,transparent 1px);
+    background-size:24px 24px;height:calc(100vh - 260px);min-height:420px;
+  }
+  .plan{position:absolute;top:0;left:0;transform-origin:0 0;width:1500px;height:1000px}
+  .plan-bg{position:absolute;inset:0;background-size:contain;background-repeat:no-repeat;opacity:.35;pointer-events:none}
+
+  .tavolo{position:absolute;display:flex;flex-direction:column;user-select:none;touch-action:auto}
+  .tavolo.editabile{touch-action:none}
+  .tavolo.v{flex-direction:row}
+  .seats{display:flex;justify-content:center;gap:6px;height:13px;align-items:center}
+  .tavolo.v .seats{flex-direction:column;width:13px;height:auto}
+  .seat{width:11px;height:11px;border-radius:50%;border:1.5px solid var(--line);background:transparent}
+  .seat.full{background:var(--amber);border-color:var(--amber)}
+  .t2 .seat.full{background:var(--viola);border-color:var(--viola)}
+  .body{
+    flex:1;border-radius:6px;border:1px solid var(--tl-bordo);color:var(--t-testo);
+    background:linear-gradient(160deg,var(--tl-a),var(--tl-b));
+    padding:5px 7px;display:flex;flex-direction:column;gap:2px;justify-content:center;
+    box-shadow:0 2px 0 var(--t-ombra);overflow:hidden;
+  }
+  .tavolo.parz .body{background:linear-gradient(160deg,var(--tp-a),var(--tp-b));border-color:var(--tp-bordo)}
+  .tavolo.pieno .body{background:linear-gradient(160deg,var(--tf-a),var(--tf-b));border-color:var(--tf-bordo)}
+  .tavolo.sel .body{outline:2px solid var(--amber);outline-offset:2px}
+  .tavolo.target .body{outline:2px dashed var(--verde);outline-offset:2px}
+  .tavolo.spenta{opacity:.16}
+  .tavolo.trovato{z-index:5}
+  .tavolo.trovato .body{outline:3px solid var(--verde);outline-offset:3px;box-shadow:0 0 0 7px rgba(79,195,161,.14)}
+  .t-nome{font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:600;display:flex;justify-content:space-between;gap:6px;opacity:.9}
+  .t-occ{color:var(--t-occ)}
+  .tavolo.pieno .t-occ{color:var(--t-occ-pieno)}
+  .t-fis{font-weight:500;opacity:.6;font-size:9px;margin-left:4px}
+  .tavolo.unito .body{box-shadow:0 0 0 2px var(--viola)}
+  .tav-card.unito{box-shadow:0 0 0 2px var(--viola)}
+  .tavolata-box{border:1px dashed var(--viola);border-radius:10px;padding:10px 11px;margin:10px 0}
+  .volanti{position:absolute;display:flex;flex-direction:column;gap:4px;top:50%;transform:translateY(-50%)}
+  .volanti.sx{left:-17px} .volanti.dx{right:-17px}
+  .tavolo.v .volanti{flex-direction:row;top:auto;left:50%;right:auto;transform:translateX(-50%)}
+  .tavolo.v .volanti.sx{top:-17px} .tavolo.v .volanti.dx{bottom:-17px}
+  .seat.volante{border-style:dashed;border-color:var(--viola)}
+  .seat.volante.full{background:var(--viola);border-style:solid}
+  .volanti-box{display:flex;align-items:center;gap:10px;border:1px dashed var(--viola);border-radius:10px;padding:9px 11px;margin:10px 0}
+  .volanti-box .hint{flex:1}
+  .volanti-box b{font-family:"IBM Plex Mono",monospace;min-width:22px;text-align:center}
+  .t-ospiti{font-size:10px;line-height:1.28}
+  .t-osp{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.92}
+  .t-osp b{font-weight:600}
+
+  .banner{
+    position:sticky;bottom:14px;z-index:30;margin-top:10px;
+    background:var(--amber);color:#231703;border-radius:10px;padding:10px 14px;
+    display:flex;align-items:center;gap:10px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.4);
+  }
+
+  /* ---------- Tabella / servizio ---------- */
+  table{width:100%;border-collapse:collapse}
+  th{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:8px;border-bottom:1px solid var(--line)}
+  td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+  tr:hover td{background:var(--surface-2)}
+  .num{font-family:"IBM Plex Mono",monospace}
+
+  .srv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+  .srv{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:10px}
+  .srv h3{font-family:"IBM Plex Mono",monospace;font-size:13px;margin:0 0 6px;display:flex;justify-content:space-between}
+  .srv ul{margin:0;padding-left:16px;font-size:12px;line-height:1.6}
+
+  /* ---------- Modale ---------- */
+  .overlay{position:fixed;inset:0;background:rgba(10,9,15,.7);display:flex;align-items:center;justify-content:center;padding:16px;z-index:60}
+  .modal{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;width:100%;max-width:420px;max-height:90vh;overflow:auto}
+  .modal.largo{max-width:820px}
+  .vicini{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+  .opzioni{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:8px}
+  .opzione{display:flex;flex-direction:column;gap:3px;text-align:left;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:10px 11px}
+  .opzione:hover{border-color:var(--muted)}
+  .opzione.on{border-color:var(--amber);background:var(--amber-soft)}
+  .opzione b{font-size:14px}
+  .opzione span{font-size:11px;color:var(--muted)}
+  .opzione .num{font-family:"IBM Plex Mono",monospace;font-style:normal;color:var(--text)}
+  .opz-vinc.ok{color:var(--verde)}
+  .opz-vinc.ko{color:var(--rosso)}
+  .opz-fuori{color:var(--rosso)!important}
+  .anteprima{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:10px;max-height:38vh;overflow-y:auto;padding-right:2px}
+  .ant-tav{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:8px 9px}
+  .ant-tav h4{margin:0 0 5px;font-size:12px;display:flex;justify-content:space-between;gap:6px;font-family:"Bricolage Grotesque",sans-serif}
+  .ant-tav h4 .num{font-family:"IBM Plex Mono",monospace;color:var(--amber)}
+  .ant-osp{font-size:11px;color:var(--muted);display:flex;justify-content:space-between;gap:6px}
+  .ant-osp .num{font-family:"IBM Plex Mono",monospace;font-style:normal}
+  .vincoli-esito{display:flex;flex-direction:column;gap:4px;margin-top:10px}
+  .vinc{display:flex;justify-content:space-between;gap:10px;font-size:12px;background:var(--surface-2);border:1px solid var(--line);border-left-width:3px;border-radius:7px;padding:5px 9px}
+  .vinc span{color:var(--muted)}
+  .vinc.insieme{border-left-color:var(--verde)}
+  .vinc.accanto{border-left-color:var(--amber)}
+  .vinc.lontano{border-left-color:var(--rosso)}
+  .modal h3{font-family:"Bricolage Grotesque",sans-serif;margin:0 0 12px;font-size:17px}
+
+  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:var(--surface-2);border:1px solid var(--line);border-radius:99px;padding:10px 18px;z-index:80;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+
+  /* ---------- Accesso ---------- */
+  .login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+  .login-card{width:100%;max-width:380px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:26px}
+  .login-card .brand{margin-bottom:22px}
+  .login-err{color:var(--rosso);font-size:12px;margin:8px 0 0}
+  .utente-chip{
+    display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);
+    border-radius:99px;padding:5px 6px 5px 12px;font-size:12px;
+  }
+  .utente-chip b{font-weight:600}
+  .ruolo{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--amber)}
+  .firma{font-size:10px;color:var(--muted);font-family:"IBM Plex Mono",monospace}
+  .log-lista{display:flex;flex-direction:column;gap:4px;max-height:340px;overflow-y:auto;font-size:12px}
+  .log-riga{display:flex;gap:8px;padding:6px 8px;border-bottom:1px solid var(--line)}
+  .log-riga time{font-family:"IBM Plex Mono",monospace;color:var(--muted);white-space:nowrap}
+  .log-riga b{color:var(--amber);font-weight:600;white-space:nowrap}
+
+  /* ---------- Manodopera ---------- */
+  .area-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-bottom:12px}
+  .area-top{display:flex;align-items:center;gap:10px;padding:11px 14px;border-left:6px solid var(--amber)}
+  .area-top h3{margin:0;font-family:"Bricolage Grotesque",sans-serif;font-size:16px;flex:1}
+  .copertura{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:13px;padding:3px 10px;border-radius:99px;border:1px solid var(--line)}
+  .copertura.ok{color:var(--verde);border-color:rgba(79,195,161,.45)}
+  .copertura.ko{color:var(--rosso);border-color:rgba(228,91,109,.45)}
+  .mans{border-top:1px solid var(--line);padding:10px 14px}
+  .mans-riga,.intestazione{display:grid;grid-template-columns:1.8fr 74px 74px 84px;gap:8px;align-items:center}
+  .intestazione{padding:2px 14px 6px;font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+  .intestazione span:nth-child(n+3){text-align:center}
+  .cifra{font-family:"IBM Plex Mono",monospace;text-align:center}
+  .delta{font-family:"IBM Plex Mono",monospace;font-weight:600;text-align:center;border-radius:7px;padding:8px 0}
+  .delta.ok{color:var(--verde);background:rgba(79,195,161,.13)}
+  .delta.ko{color:var(--rosso);background:rgba(228,91,109,.13)}
+  .persone{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;align-items:center}
+  .persona{display:inline-flex;align-items:center;gap:4px;background:var(--surface-2);border:1px solid var(--line);border-radius:99px;padding:5px 6px 5px 12px;font-size:13px}
+  .persona button{color:var(--muted);font-size:16px;line-height:1;padding:0 5px}
+  .persona button:hover{color:var(--rosso)}
+  .add-persona{width:160px;border-radius:99px;border-style:dashed;padding:7px 13px;font-size:13px}
+  .persone-lista{display:flex;flex-direction:column;gap:6px;margin-top:9px}
+  .persona-riga{display:flex;align-items:center;gap:6px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:5px 6px 5px 11px;flex-wrap:wrap}
+  .persona-riga.senza-ora{border-color:rgba(228,91,109,.45)}
+  .persona-riga.aggiungi{background:transparent;border:none;padding:0;gap:10px}
+  .persona-nome{flex:1;min-width:90px;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .orario-mini{width:108px;flex:0 0 auto;padding:5px 7px;font-family:"IBM Plex Mono",monospace;font-size:12px;border-radius:7px;color-scheme:dark}
+  .turno-sep{color:var(--muted);font-size:12px}
+  .persona-riga .togli{color:var(--muted);font-size:17px;line-height:1;padding:0 6px}
+  .persona-riga .togli:hover{color:var(--rosso)}
+  .turno-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:9px 12px;margin-bottom:12px}
+  .turno-lab{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .turno-bar .hint{flex:1;min-width:190px}
+  .fasce-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .fascia{border:1px solid var(--line);border-radius:10px;margin-bottom:9px;overflow:hidden}
+  .fascia-ora{display:flex;align-items:baseline;gap:10px;padding:7px 11px;background:var(--surface-2);border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .fascia-ora b{font-size:14px}
+  .fascia-ora span{font-size:11px;color:var(--muted)}
+  .fascia-ora span.ko{color:var(--rosso)}
+  .fascia-ora span.ok{color:var(--verde)}
+  .fascia-area{display:flex;gap:9px;padding:8px 11px;border-bottom:1px solid var(--line);align-items:flex-start}
+  .fascia-area:last-child{border-bottom:none}
+  .fascia-pill{flex:0 0 auto;border-radius:99px;padding:3px 10px;font-size:11px;font-weight:700}
+  .fascia-mansioni{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}
+  .fascia-mans{display:grid;grid-template-columns:132px 52px 1fr;gap:8px;align-items:baseline;font-size:12px}
+  .fascia-mans-nome{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .fascia-conta{font-family:"IBM Plex Mono",monospace;font-size:11px}
+  .fascia-conta.ko{color:var(--rosso)}
+  .fascia-conta.ok{color:var(--verde)}
+  .fascia-nomi{color:var(--muted);min-width:0}
+  @media(max-width:760px){
+    .fascia-mans{grid-template-columns:1fr 48px;grid-template-areas:"n c" "p p"}
+    .fascia-mans-nome{grid-area:n}
+    .fascia-conta{grid-area:c;text-align:right}
+    .fascia-nomi{grid-area:p}
+    .orario-mini{width:96px}
+  }
+  @media(max-width:760px){
+    .intestazione{display:none}
+    .mans-riga{grid-template-columns:1fr 1fr 1fr;gap:6px}
+    .mans-riga .campo-largo{grid-column:1 / -1}
+  }
+
+  /* ---------- Editor mappa area ---------- */
+  .mappa-wrap{position:relative;overflow:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--tela);height:calc(100vh - 250px);min-height:400px}
+  .scaler{position:relative}
+  .mappa{position:absolute;top:0;left:0;transform-origin:0 0;background:var(--tela)}
+  .mappa-bg{position:absolute;inset:0;background-size:contain;background-position:center;background-repeat:no-repeat}
+  .forma{position:absolute;display:flex;align-items:center;justify-content:center;text-align:center;cursor:grab;touch-action:none;user-select:none}
+  .forma.sel{outline:2px solid var(--amber);outline-offset:3px}
+  .forma .txt{white-space:pre-line;font-weight:800;letter-spacing:.02em;line-height:1.15;padding:0 8px;word-break:break-word}
+  .forma.zona{align-items:flex-start;justify-content:flex-start}
+  .forma.zona .txt{font-weight:700;padding:6px 10px}
+  .maniglia{position:absolute;right:-9px;bottom:-9px;width:20px;height:20px;border-radius:50%;background:#fff;border:2px solid var(--ink);cursor:nwse-resize;touch-action:none}
+  .tavolozza{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 10px}
+  .pastiglia{width:30px;height:30px;border-radius:8px;border:2px solid transparent}
+  .pastiglia.on{border-color:var(--text)}
+  .prop{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+  .prop label{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);min-width:64px}
+  .prop input[type=range]{flex:1;padding:0}
+  @media(max-width:760px){
+    .mappa-wrap{height:56vh}
+  }
+  .bottom-nav{display:none}
+  .segment{display:none}
+
+  @media(max-width:1000px){
+    .app{padding:0 12px 96px}
+    .split{gap:12px}
+    .lista{max-height:none}
+    .plan-wrap{height:64vh}
+  }
+
+  @media(max-width:760px){
+    body{font-size:15px}
+    .app{padding:0 10px 90px}
+    .top{position:static;padding:10px 0 8px}
+    .top-row{gap:10px}
+    .brand{font-size:18px}
+    .brand small{display:none}
+    .stats{flex-wrap:nowrap;overflow-x:auto;width:100%;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+    .stats::-webkit-scrollbar{display:none}
+    .stat{flex:0 0 auto;min-width:76px;padding:6px 10px}
+    .stat b{font-size:17px}
+    .tabs{display:none}
+    .cloud{font-size:10px}
+    .utente-chip{margin-left:auto}
+    .panel{padding:12px}
+    .panel h2{font-size:16px}
+    input,select,textarea{font-size:16px;padding:11px 12px}
+    .btn{min-height:46px;padding:12px 16px}
+    .btn.sm{min-height:42px;padding:10px 12px;font-size:13px}
+    .chip{min-height:40px;display:inline-flex;align-items:center;padding:0 14px}
+    .pren{padding:12px}
+    .pren-actions{flex-wrap:wrap}
+    .pren-actions .btn{flex:1;min-width:110px}
+    .plan-bar{gap:6px}
+    .plan-wrap{height:66vh}
+    .banner{position:fixed;left:10px;right:10px;bottom:80px;margin:0;flex-wrap:wrap;gap:8px}
+    .overlay{align-items:flex-end;padding:0}
+    .modal{max-width:none;border-radius:18px 18px 0 0;max-height:92vh;padding:20px 16px calc(20px + env(safe-area-inset-bottom))}
+    .srv-grid{grid-template-columns:1fr}
+
+    .segment{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px;margin:12px 0 10px}
+    .segment button{flex:1;padding:11px;border-radius:8px;color:var(--muted);font-weight:600}
+    .segment button.on{background:var(--amber-soft);color:var(--amber)}
+
+    .bottom-nav{
+      display:flex;position:fixed;left:0;right:0;bottom:0;z-index:50;gap:4px;
+      background:var(--surface);border-top:1px solid var(--line);
+      padding:6px 8px calc(6px + env(safe-area-inset-bottom));
+    }
+    .bottom-nav button{flex:1;padding:10px 4px;border-radius:9px;color:var(--muted);font-size:11px;font-weight:600;line-height:1.3}
+    .bottom-nav button.on{background:var(--amber-soft);color:var(--amber)}
+
+    /* Registro: da tabella a schede */
+    .tab-cards thead{display:none}
+    .tab-cards,.tab-cards tbody,.tab-cards tr,.tab-cards td{display:block;width:100%}
+    .tab-cards tr{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px}
+    .tab-cards tr:hover td{background:transparent}
+    .tab-cards td{border:none;padding:4px 0;display:flex;justify-content:space-between;gap:14px;text-align:right}
+    .tab-cards td::before{content:attr(data-label);color:var(--muted);font-size:10px;letter-spacing:.09em;text-transform:uppercase;text-align:left;flex:0 0 auto;padding-top:3px}
+    .tab-cards td:first-child{font-size:16px;padding-bottom:8px}
+    .tab-cards td:first-child::before{content:none}
+  }
+
+  /* ---------- Telefono: sala ---------- */
+  .split>*{min-width:0}
+  .tav-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .tav-card{text-align:left;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--line);border-radius:10px;padding:10px 11px;display:flex;flex-direction:column;gap:6px;min-width:0}
+  .tav-card.parz{border-left-color:var(--amber)}
+  .tav-card.pieno{border-left-color:var(--verde)}
+  .tav-card.target{border-color:var(--verde);border-style:dashed}
+  .tav-card-top{display:flex;justify-content:space-between;align-items:baseline;gap:6px}
+  .tav-card-top b{font-family:"Bricolage Grotesque",sans-serif;font-size:17px}
+  .tav-card-top span{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--amber)}
+  .tav-barra{height:4px;border-radius:99px;background:var(--line);overflow:hidden}
+  .tav-barra i{display:block;height:100%;background:var(--amber)}
+  .tav-card.pieno .tav-barra i{background:var(--verde)}
+  .tav-osp{font-size:12px;line-height:1.35;display:flex;justify-content:space-between;gap:6px}
+  .tav-osp span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tav-osp i{font-style:normal;font-family:"IBM Plex Mono",monospace;color:var(--muted)}
+  .tav-vuoto{font-size:12px;color:var(--muted)}
+  .sala-mob{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+  .sala-mob .plan-cerca{flex:1;width:auto;min-width:0}
+  @media(max-width:760px){
+    html,body{overflow-x:hidden}
+    .split{grid-template-columns:minmax(0,1fr)}
+    .cloud{font-size:0}
+    .utente-chip{padding:3px 4px 3px 10px}
+    .plan-bar{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+    .plan-bar::-webkit-scrollbar{display:none}
+    .plan-bar>*{flex:0 0 auto}
+    .plan-bar .spacer,.plan-istr{display:none}
+    .bottom-nav{gap:2px;padding-left:4px;padding-right:4px}
+    .bottom-nav button{min-width:0;padding:10px 2px;font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  }
+
+  @media print{
+    body{background:#fff;color:#000}
+    .no-print{display:none!important}
+    .srv,.panel{border-color:#bbb;background:#fff;break-inside:avoid}
+  }
+
+  /* ---------- Vigilia: elementi della sala ---------- */
+  .plan-bg{background-size:100% 100%;opacity:.55}
+  .tavolo .body{align-items:center;text-align:center}
+  .tavolo .t-nome{flex-direction:column;align-items:center;gap:0;font-size:17px;line-height:1.15}
+  .tavolo .t-occ{font-size:11px;font-weight:500}
+  .elemento{position:absolute;display:flex;align-items:center;justify-content:center;text-align:center;border-radius:10px;
+    font-family:"Bricolage Grotesque",sans-serif;font-weight:700;font-size:20px;line-height:1.1;padding:6px;overflow:hidden;
+    user-select:none;touch-action:auto;box-shadow:0 2px 0 rgba(0,0,0,.25)}
+  .elemento.editabile{touch-action:none;cursor:move;outline:1px dashed rgba(255,255,255,.55);outline-offset:-4px}
+  .tavolo.editabile{cursor:move}
+  .avviso-db{background:rgba(228,91,109,.12);border:1px solid rgba(228,91,109,.45);border-radius:10px;padding:10px 12px;margin:10px 0;font-size:13px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useMemo, useRef, useCallback } = React;
+
+/* =========================================================
+   1) CONFIGURAZIONE FIREBASE  ← incolla qui i dati del progetto
+   Se lasci projectId vuoto, l'app lavora in locale sul dispositivo.
+   ========================================================= */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDtCK8zdREKi7qk3Lyva3Yr3T-5heW5B2k",
+  authDomain: "festival-cc318.firebaseapp.com",
+  projectId: "festival-cc318",
+  storageBucket: "festival-cc318.firebasestorage.app",
+  messagingSenderId: "118390368654",
+  appId: "1:118390368654:web:13392c9a2df58f2467dcdf"
+};
+
+/* I dati stanno nello stesso progetto Firebase del Festival ma in raccolte proprie:
+   le due app non si toccano. Anche le chiavi locali sono diverse, perché
+   su github.io tutte le app dello stesso account condividono il browser. */
+const COL_IMPOSTAZIONI = "vigilia_impostazioni";
+const COL_ATTIVITA = "vigilia_attivita";
+const LS_KEY = "vigilia_v1";
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+/* =========================================================
+   2) ACCESSO
+   La password di ogni utente coincide con il suo nome utente
+   (gianluca → gianluca). L'unica eccezione è l'admin qui sotto.
+   ========================================================= */
+const ADMIN_USER = "admin";
+const ADMIN_PASS = "dado";
+const UTENTI_DEFAULT = [{ nome: "admin", ruolo: "admin" }];
+const LS_UTENTE = "vigilia_utente";
+const norm = (s) => (s || "").trim().toLowerCase();
+const quando = (ts) => ts ? new Date(ts).toLocaleString("it-IT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "";
+
+/* ---------- Sezioni dell'app e visibilità ----------
+   Ogni sezione può essere resa "riservata": la vedono solo l'admin
+   e gli utenti autorizzati uno per uno dalle Impostazioni.
+   Le Impostazioni (utenti, permessi, registro attività) restano
+   sempre e solo dell'admin: non sono delegabili.                */
+const SEZIONI = [
+  { k: "piantina", l: "Sala", nav: "Sala" },
+  { k: "finanze", l: "Costi & Ricavi", nav: "Costi" },
+  { k: "impostazioni", l: "Impostazioni", nav: "Admin", soloAdmin: true }
+];
+const PERMESSI_DEFAULT = { finanze: { riservata: true, utenti: [] } };
+
+/* =========================================================
+   3) ELEMENTI DELLA SALA (bar, palco, ingresso…)
+   ========================================================= */
+const SFONDO_W = 1500;
+const COLORI = [
+  { id: "verde", bg: "#21A05B", testo: "#FFFFFF" },
+  { id: "rosso", bg: "#E0524F", testo: "#FFFFFF" },
+  { id: "arancio", bg: "#F0894A", testo: "#FFFFFF" },
+  { id: "marrone", bg: "#7A4C2E", testo: "#FFFFFF" },
+  { id: "blu", bg: "#3E9BE0", testo: "#FFFFFF" },
+  { id: "viola", bg: "#8E6BD8", testo: "#FFFFFF" },
+  { id: "giallo", bg: "#E8B93C", testo: "#2A1E05" },
+  { id: "nero", bg: "#141319", testo: "#FFFFFF" },
+  { id: "bianco", bg: "#F3EFE7", testo: "#1A1822" }
+];
+const colore = (id) => COLORI.find(c => c.id === id) || COLORI[0];
+
+/* =========================================================
+   3-bis) COSTI & RICAVI
+   ========================================================= */
+const TIPI_SOGGETTO = [
+  { id: "persona", label: "Persona" },
+  { id: "fornitore", label: "Fornitore" },
+  { id: "attivita", label: "Attività commerciale" },
+  { id: "ente", label: "Ente / Associazione" },
+  { id: "altro", label: "Altro" }
+];
+
+/* Le associazioni che organizzano: ogni costo e ogni incasso è intestato a una di loro,
+   poi il risultato comune si divide secondo le quote. */
+const ENTI_DEFAULT = [
+  { id: "futsal", nome: "Futsal Fabbrico", quota: 33.34 },
+  { id: "proloco", nome: "Pro Loco", quota: 33.33 },
+  { id: "calcio", nome: "Calcio", quota: 33.33 }
+];
+
+/* importo di riferimento: il consuntivo se c'è, altrimenti il preventivo */
+const importoVoce = (v) => {
+  const c = v.consuntivo;
+  return (c === null || c === undefined || c === "") ? (Number(v.preventivo) || 0) : (Number(c) || 0);
+};
+/* quota dell'incasso che resta alle associazioni (il resto va girato alla controparte) */
+const quotaAssoc = (v) => {
+  if (v.tipo !== "ricavo") return 100;
+  const q = (v.quotaAssoc === null || v.quotaAssoc === undefined || v.quotaAssoc === "") ? 100 : Number(v.quotaAssoc);
+  return isNaN(q) ? 100 : Math.min(100, Math.max(0, q));
+};
+
+/* "compreso negli incassi": i soldi sono già dentro le casse/POS registrati,
+   quindi non vanno sommati una seconda volta (fondo cassa, vendite delle attività passate dalle casse) */
+const fondoNegliIncassi = (v) => v.tipo === "fondo" && (v.statoFondo === "incluso" || v.incluso === true);
+const fondoRestituito = (v) => v.tipo === "fondo" && (v.restituito === true || v.statoFondo === "restituito");
+const ricavoNegliIncassi = (v) => v.tipo === "ricavo" && v.incluso === true;
+
+function calcolaRipartizione(voci, enti) {
+  const perEnte = {};
+  enti.forEach(e => { perEnte[e.id] = { ente: e, incassi: 0, daGirare: 0, costi: 0, prelievi: 0, fondi: 0, fondoInCassa: 0, fondoNegliIncassi: 0, propri: 0, disponibile: 0, spettante: 0, conguaglio: 0 }; });
+  const perCp = {};
+  let ricaviLordi = 0, ricaviNetti = 0, girate = 0, costi = 0, prelievi = 0, fondi = 0, fondiRestituiti = 0, fondoIncassi = 0, propri = 0, senzaEnte = 0, daConsuntivare = 0;
+
+  voci.forEach(v => {
+    const imp = importoVoce(v), q = quotaAssoc(v);
+    const e = perEnte[v.ente];
+    if (!v.ente || !e) senzaEnte++;
+    if (v.consuntivo === null || v.consuntivo === undefined) daConsuntivare++;
+    const cp = v.soggetto || "";
+    if (!perCp[cp]) perCp[cp] = { id: cp, incassato: 0, daGirare: 0, costi: 0 };
+    if (v.tipo === "fondo") {
+      /* fondo cassa anticipato da un'associazione: non è né costo né ricavo, va solo restituito */
+      if (fondoRestituito(v)) { fondiRestituiti += imp; return; }
+      fondi += imp;
+      if (e) e.fondi += imp;
+      const p = perEnte[v.presso || v.ente];
+      if (fondoNegliIncassi(v)) {
+        /* il fondo è già contato dentro gli incassi delle casse: lo si toglie dal ricavo, il contante resta a chi lo tiene */
+        fondoIncassi += imp;
+        if (p) p.fondoNegliIncassi += imp;
+      } else if (p) p.fondoInCassa += imp;
+      return;
+    }
+    const incl = ricavoNegliIncassi(v);
+    const ripartita = incl || v.ripartita !== false;
+    if (v.tipo === "prelievo") {
+      /* merce tenuta da un'associazione: vale come un incasso suo, così paga agli altri la loro parte */
+      if (e) { e.prelievi += imp; if (!ripartita) e.propri += imp; }
+      if (ripartita) { ricaviNetti += imp; prelievi += imp; } else propri += imp;
+      return;
+    }
+    if (v.tipo === "ricavo") {
+      const netto = imp * q / 100, gira = imp - netto;
+      perCp[cp].incassato += imp; perCp[cp].daGirare += gira;
+      if (e) {
+        if (!incl) e.incassi += imp;           /* se è già nelle casse, l'incasso è già contato lì */
+        e.daGirare += gira;
+        if (!ripartita) e.propri += netto;
+      }
+      if (ripartita) {
+        if (!incl) { ricaviLordi += imp; ricaviNetti += netto; }
+        else ricaviNetti -= gira;              /* dal lordo delle casse si toglie solo la quota dell'attività */
+        girate += gira;
+      } else propri += netto;
+    } else {
+      perCp[cp].costi += imp;
+      if (e) { e.costi += imp; if (v.ripartita === false) e.propri -= imp; }
+      if (v.ripartita !== false) costi += imp; else propri -= imp;
+    }
+  });
+
+  ricaviNetti -= fondoIncassi;
+  const incassoAssoc = ricaviLordi - fondoIncassi - girate;
+  const risultato = ricaviNetti - costi;
+  const quotaTot = +enti.reduce((t, e) => t + (Number(e.quota) || 0), 0).toFixed(2);
+  const c2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
+  const lista = enti.map(e => {
+    const x = perEnte[e.id];
+    /* disponibile: quello che l'associazione ha in mano per la cassa comune (tolte le voci proprie) */
+    x.disponibile = c2(x.incassi + x.prelievi + x.fondoInCassa - x.daGirare - x.costi - x.propri);
+    x.spettante = c2(risultato * (Number(e.quota) || 0) / 100);
+    return x;
+  });
+  /* arrotondamento al centesimo: l'eventuale centesimo che avanza va all'associazione con la quota più alta,
+     così spettanti e conguagli tornano esatti e i versamenti coincidono con quanto mostrato */
+  if (lista.length) {
+    const scarto = c2(c2(risultato * quotaTot / 100) - lista.reduce((t, x) => t + x.spettante, 0));
+    if (scarto) {
+      const top = lista.reduce((m, x) => ((Number(x.ente.quota) || 0) > (Number(m.ente.quota) || 0) ? x : m), lista[0]);
+      top.spettante = c2(top.spettante + scarto);
+    }
+  }
+  lista.forEach(x => { x.conguaglio = c2(x.spettante + x.fondi - x.disponibile); });
+  const controparti = Object.keys(perCp).map(k => perCp[k])
+    .sort((a, b) => (b.incassato + b.costi) - (a.incassato + a.costi));
+  /* scorporo delle vendite delle attività commerciali: quanto va a loro e quanto resta alle associazioni */
+  const attivita = controparti.filter(c => c.daGirare > 0.004)
+    .map(c => ({ id: c.id, venduto: c.incassato, aLoro: c.daGirare, aNoi: c.incassato - c.daGirare }));
+
+  return { enti: lista, controparti, attivita, ricaviLordi, ricaviNetti, incassoAssoc, girate, costi, risultato, prelievi, fondi, fondiRestituiti, fondoIncassi, propri, senzaEnte, daConsuntivare, quotaTot };
+}
+/* chi versa a chi per pareggiare i conguagli: il minor numero di bonifici */
+function calcolaVersamenti(listaEnti) {
+  const deb = listaEnti.filter(e => e.conguaglio < -0.005).map(e => ({ n: e.ente.nome, v: -e.conguaglio })).sort((a, b) => b.v - a.v);
+  const cre = listaEnti.filter(e => e.conguaglio > 0.005).map(e => ({ n: e.ente.nome, v: e.conguaglio })).sort((a, b) => b.v - a.v);
+  const giri = [];
+  let i = 0, j = 0;
+  while (i < deb.length && j < cre.length) {
+    const imp = Math.min(deb[i].v, cre[j].v);
+    if (imp >= 0.01) giri.push({ da: deb[i].n, a: cre[j].n, importo: Math.round(imp * 100) / 100 });
+    deb[i].v -= imp; cre[j].v -= imp;
+    if (deb[i].v < 0.005) i++;
+    if (cre[j].v < 0.005) j++;
+  }
+  return giri;
+}
+const TIPI_VOCE = [
+  { id: "costo", label: "Costo" },
+  { id: "ricavo", label: "Ricavo" },
+  { id: "prelievo", label: "Prelievo in natura" },
+  { id: "fondo", label: "Fondo cassa" }
+];
+const tipoVoceLabel = (id) => (TIPI_VOCE.find(t => t.id === (id || "costo")) || TIPI_VOCE[0]).label.toLowerCase();
+const tipoSoggettoLabel = (id) => (TIPI_SOGGETTO.find(t => t.id === id) || TIPI_SOGGETTO[3]).label;
+const euro = (n) => (Number(n) || 0).toLocaleString("it-IT", { style: "currency", currency: "EUR" });
+
+const ELEMENTI_RAPIDI = ["Bar", "Palco", "DJ", "Pista da ballo", "Cucina", "Buffet", "Ingresso", "Cassa", "Guardaroba", "Bagni"];
+
+/* ---------- Piantina di partenza: 26 tavoli da 8 = 208 posti ---------- */
+function piantinaDefault(n = 26, cols = 5) {
+  const tavoli = [];
+  for (let i = 0; i < n; i++) {
+    tavoli.push({
+      id: "T" + (i + 1),
+      nome: "T" + (i + 1),
+      posti: 8,
+      orient: "h",
+      x: 40 + (i % cols) * 230,
+      y: 40 + Math.floor(i / cols) * 135
+    });
+  }
+  return tavoli;
+}
+
+/* ---------- Persistenza ---------- */
+let db = null;
+if (FIREBASE_CONFIG.projectId) {
+  try {
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.firestore();
+    db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+  } catch (e) { console.error(e); }
+}
+
+function leggiLocale() {
+  try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; } catch (e) { return {}; }
+}
+function scriviLocale(d) { localStorage.setItem(LS_KEY, JSON.stringify(d)); }
+
+/* Chi sta usando l'app in questo momento: serve per firmare ogni modifica */
+let UTENTE_CORRENTE = null;
+const firma = () => ({ modificatoDa: UTENTE_CORRENTE ? UTENTE_CORRENTE.nome : "?", modificatoIl: Date.now() });
+
+/* =========================================================
+   Hook dati
+   ========================================================= */
+function useDati() {
+  const [tavoli, setTavoli] = useState([]);
+  const [elementi, setElementi] = useState([]);
+  const [sfondo, setSfondo] = useState(null);      /* { img, ratio } */
+  const [utenti, setUtenti] = useState(UTENTI_DEFAULT);
+  const [attivita, setAttivita] = useState([]);
+  const [finanze, setFinanze] = useState({ voci: [], soggetti: [], enti: null });
+  const [finanzePronte, setFinanzePronte] = useState(false);
+  const [permessi, setPermessi] = useState(PERMESSI_DEFAULT);
+  const [pronto, setPronto] = useState(false);
+  const [errore, setErrore] = useState("");
+
+  /* lo stato più recente, letto dai salvataggi senza dipendere dall'ultimo render */
+  const stato = useRef({});
+  stato.current = { tavoli, elementi, sfondo, utenti, attivita, finanze, permessi };
+  const salvaLocale = (extra) => { stato.current = { ...stato.current, ...extra }; scriviLocale(stato.current); };
+  const imp = (nome) => db.collection(COL_IMPOSTAZIONI).doc(nome);
+  const segnala = useCallback((e) => {
+    console.error(e);
+    setErrore("Firebase non ha accettato l'operazione: " + (e && e.message ? e.message : e));
+  }, []);
+
+  useEffect(() => {
+    if (db) {
+      /* i valori di partenza si scrivono solo se il server conferma che il documento non c'è:
+         una cache vuota non deve mai sovrascrivere i dati veri */
+      const u1 = imp("piantina").onSnapshot({ includeMetadataChanges: true }, d => {
+        const v = d.data();
+        if (v && v.tavoli) { setTavoli(v.tavoli); setElementi(v.elementi || []); }
+        else {
+          const t = piantinaDefault();
+          setTavoli(t); setElementi([]);
+          if (!d.metadata.fromCache) imp("piantina").set({ tavoli: t, elementi: [] }).catch(segnala);
+        }
+        setPronto(true);
+      }, e => { segnala(e); setTavoli(piantinaDefault()); setPronto(true); });
+      const u2 = imp("utenti").onSnapshot({ includeMetadataChanges: true }, d => {
+        const v = d.data();
+        if (v && v.lista) setUtenti(v.lista);
+        else if (!d.metadata.fromCache) imp("utenti").set({ lista: UTENTI_DEFAULT }).catch(segnala);
+      }, segnala);
+      const u3 = db.collection(COL_ATTIVITA).orderBy("ts", "desc").limit(150)
+        .onSnapshot(s => setAttivita(s.docs.map(d => d.data())), segnala);
+      const u4 = imp("sfondo").onSnapshot(d => {
+        const v = d.data();
+        setSfondo(v && v.img ? { img: v.img, ratio: v.ratio || 1.5 } : null);
+      }, segnala);
+      /* finanze: si considerano caricate solo quando arrivano dal server (o dalla cache se il documento c'è),
+         così nessun salvataggio parte da uno stato vuoto e cancella le voci già inserite */
+      const u5 = imp("finanze").onSnapshot({ includeMetadataChanges: true }, d => {
+        const v = d.data();
+        setFinanze({ voci: (v && v.voci) || [], soggetti: (v && v.soggetti) || [], enti: (v && v.enti) || null });
+        if (d.exists || !d.metadata.fromCache) setFinanzePronte(true);
+      }, segnala);
+      const u6 = imp("permessi").onSnapshot({ includeMetadataChanges: true }, d => {
+        const v = d.data();
+        if (v && v.sezioni) setPermessi(v.sezioni);
+        else if (!d.metadata.fromCache) imp("permessi").set({ sezioni: PERMESSI_DEFAULT }).catch(segnala);
+      }, segnala);
+      return () => { u1(); u2(); u3(); u4(); u5(); u6(); };
+    }
+    const l = leggiLocale();
+    setTavoli(l.tavoli && l.tavoli.length ? l.tavoli : piantinaDefault());
+    setElementi(l.elementi || []);
+    setSfondo(l.sfondo || null);
+    setUtenti(l.utenti && l.utenti.length ? l.utenti : UTENTI_DEFAULT);
+    setAttivita(l.attivita || []);
+    setFinanze(l.finanze || { voci: [], soggetti: [], enti: null });
+    setFinanzePronte(true);
+    setPermessi(l.permessi || PERMESSI_DEFAULT);
+    setPronto(true);
+  }, []);
+
+  /* mentre si trascina si aggiorna solo lo schermo: si salva una volta sola al rilascio */
+  const anteprimaPiantina = useCallback((t, e) => { setTavoli(t); setElementi(e); }, []);
+
+  const salvaPiantina = useCallback((t, e) => {
+    const el = e !== undefined ? e : stato.current.elementi;
+    setTavoli(t); setElementi(el);
+    if (db) return imp("piantina").set({ tavoli: t, elementi: el }).catch(segnala);
+    salvaLocale({ tavoli: t, elementi: el });
+  }, []);
+
+  const salvaSfondo = useCallback((s) => {
+    setSfondo(s);
+    if (db) return imp("sfondo").set(s || { img: "" }).catch(segnala);
+    salvaLocale({ sfondo: s });
+  }, []);
+
+  const salvaUtenti = useCallback((lista) => {
+    setUtenti(lista);
+    if (db) return imp("utenti").set({ lista }).catch(segnala);
+    salvaLocale({ utenti: lista });
+  }, []);
+
+  const salvaFinanze = useCallback((next) => {
+    if (!finanzePronte) { alert("Costi & Ricavi non ancora caricati dal server: riprova fra qualche secondo."); return; }
+    setFinanze(next);
+    if (db) {
+      const pulito = JSON.parse(JSON.stringify(next)); /* Firestore rifiuta i valori undefined */
+      return imp("finanze").set(pulito)
+        .catch(e => { segnala(e); alert("Salvataggio non riuscito: " + (e && e.message ? e.message : e)); });
+    }
+    salvaLocale({ finanze: next });
+  }, [finanzePronte]);
+
+  const salvaPermessi = useCallback((sezioni) => {
+    setPermessi(sezioni);
+    if (db) return imp("permessi").set({ sezioni }).catch(segnala);
+    salvaLocale({ permessi: sezioni });
+  }, []);
+
+  const log = useCallback((azione) => {
+    const voce = { utente: UTENTE_CORRENTE ? UTENTE_CORRENTE.nome : "?", azione, ts: Date.now() };
+    if (db) { db.collection(COL_ATTIVITA).add(voce).catch(e => console.error(e)); return; }
+    const next = [voce, ...(stato.current.attivita || [])].slice(0, 200);
+    setAttivita(next);
+    salvaLocale({ attivita: next });
+  }, []);
+
+  return { tavoli, elementi, sfondo, utenti, attivita, finanze, finanzePronte, permessi, pronto, errore, cloud: !!db,
+    anteprimaPiantina, salvaPiantina, salvaSfondo, salvaUtenti, salvaFinanze, salvaPermessi, log };
+}
+
+
+/* =========================================================
+   Utilità
+   ========================================================= */
+/* posti volanti: sedie aggiunte a capotavola, oltre ai posti normali */
+/* numero mostrato: i tavoli uniti in una tavolata condividono lo stesso numero, ma restano tavoli distinti nella conta */
+const etichetta = (t) => (t && (t.gruppo || t.nome)) || "";
+const capienza = (t) => (t.posti || 0) + (t.volanti || 0);
+const capTxt = (t) => (t.posti || 0) + (t.volanti ? "+" + t.volanti : "");
+const dimTavolo = (t) => {
+  const perLato = Math.ceil((t.posti || 0) / 2);
+  const lung = 30 + perLato * 30;
+  return t.orient === "v" ? { w: 96, h: lung } : { w: lung, h: 96 };
+};
+const rettTavolo = (t) => {
+  const d = dimTavolo(t);
+  return { x1: t.x || 0, y1: t.y || 0, x2: (t.x || 0) + d.w, y2: (t.y || 0) + d.h };
+};
+/* due tavoli si coprono a vicenda? (con un margine, così due tavoli attaccati non contano) */
+const siSovrappongono = (a, b) => {
+  const A = rettTavolo(a), B = rettTavolo(b);
+  return A.x1 < B.x2 - 10 && B.x1 < A.x2 - 10 && A.y1 < B.y2 - 10 && B.y1 < A.y2 - 10;
+};
+/* prima posizione libera nella griglia */
+const postoLibero = (piazzati, modello) => {
+  for (let r = 0; r < 60; r++) {
+    for (let c = 0; c < 8; c++) {
+      const cand = { ...modello, x: 40 + c * 230, y: 40 + r * 135 };
+      if (!piazzati.some(u => siSovrappongono(cand, u))) return { x: cand.x, y: cand.y };
+    }
+  }
+  return { x: 40, y: 40 + 135 * 60 };
+};
+const ordineTavoli = (a, b) => (a.y - b.y) || (a.x - b.x) || String(a.nome).localeCompare(String(b.nome), "it", { numeric: true });
+
+/* =========================================================
+   Componente tavolo
+   ========================================================= */
+function Tavolo({ t, trovato, spento, modifica, onClick, onDragStart }) {
+  const perLato = Math.ceil(t.posti / 2);
+  const sopra = perLato, sotto = t.posti - perLato;
+  const orizz = t.orient !== "v";
+  const lung = 30 + perLato * 30;
+  const W = orizz ? lung : 96, H = orizz ? 96 : lung;
+  const vol = t.volanti || 0;
+  const volSx = Math.ceil(vol / 2), volDx = vol - volSx;
+  const volDots = (n) => Array.from({ length: n }, (_, i) => <span key={i} className="seat volante" />);
+  const dots = (n) => Array.from({ length: n }, (_, i) => <span key={i} className="seat" />);
+  return (
+    <div
+      className={"tavolo" + (orizz ? "" : " v") + (t.gruppo ? " unito" : "") + (modifica ? " editabile" : "") +
+        (trovato ? " trovato" : "") + (spento ? " spenta" : "")}
+      style={{ left: t.x, top: t.y, width: W, minHeight: H }}
+      onPointerDown={modifica ? (e) => onDragStart(e, "t", t) : undefined}
+      onClick={() => onClick(t)}
+      title={etichetta(t) + (t.gruppo ? " (tavolo " + t.nome + ")" : "") + " — " + capTxt(t) + " posti"}
+    >
+      {volSx > 0 && <div className="volanti sx" title="Posto volante (capotavola)">{volDots(volSx)}</div>}
+      {volDx > 0 && <div className="volanti dx" title="Posto volante (capotavola)">{volDots(volDx)}</div>}
+      <div className="seats">{dots(sopra)}</div>
+      <div className="body">
+        <div className="t-nome"><span>{etichetta(t)}{t.gruppo && t.gruppo !== t.nome && <span className="t-fis">{t.nome}</span>}</span><span className="t-occ">{capTxt(t)} posti</span></div>
+      </div>
+      <div className="seats">{dots(sotto)}</div>
+    </div>
+  );
+}
+
+
+/* ---------- Rilevamento schermo piccolo ---------- */
+function useMobile(bp = 760) {
+  const [m, setM] = useState(() => window.innerWidth <= bp);
+  useEffect(() => {
+    const f = () => setM(window.innerWidth <= bp);
+    window.addEventListener("resize", f);
+    window.addEventListener("orientationchange", f);
+    return () => { window.removeEventListener("resize", f); window.removeEventListener("orientationchange", f); };
+  }, [bp]);
+  return m;
+}
+
+/* =========================================================
+   App
+   ========================================================= */
+function App() {
+  const D = useDati();
+  const [utente, setUtente] = useState(() => { try { return JSON.parse(localStorage.getItem(LS_UTENTE)); } catch (e) { return null; } });
+  const isAdmin = !!utente && utente.ruolo === "admin";
+  UTENTE_CORRENTE = utente;
+
+  const entra = (u) => { UTENTE_CORRENTE = u; localStorage.setItem(LS_UTENTE, JSON.stringify(u)); setUtente(u); };
+  const esci = () => { localStorage.removeItem(LS_UTENTE); UTENTE_CORRENTE = null; setUtente(null); };
+
+  const mobile = useMobile();
+  const [tema, setTema] = useState(() => localStorage.getItem("vigilia_tema") || "scuro");
+  useEffect(() => {
+    document.documentElement.setAttribute("data-tema", tema);
+    localStorage.setItem("vigilia_tema", tema);
+  }, [tema]);
+  const [vista, setVista] = useState("piantina");
+  const [modifica, setModifica] = useState(false); // sposta tavoli ed elementi
+  const [zoom, setZoom] = useState(() => (window.innerWidth <= 760 ? 0.5 : 0.85));
+  const [cercaTav, setCercaTav] = useState("");
+  const [modale, setModale] = useState(null);
+  const [toast, setToast] = useState("");
+  const planRef = useRef(null);
+  const wrapRef = useRef(null);
+  const drag = useRef(null);
+  const adatta = () => { if (wrapRef.current) setZoom(+Math.max(0.2, (wrapRef.current.clientWidth - 20) / dimPiantina.w).toFixed(2)); };
+
+  const mostra = (m) => { setToast(m); setTimeout(() => setToast(""), 2200); };
+
+  /* la cartina di sfondo è larga sempre 1500 punti: l'altezza segue le proporzioni dell'immagine */
+  const sfondoDim = D.sfondo ? { w: SFONDO_W, h: Math.round(SFONDO_W / (D.sfondo.ratio || 1.5)) } : null;
+
+  /* dimensioni reali della piantina: quanto occupano tavoli ed elementi (più spazio quando li sposti) */
+  const dimPiantina = useMemo(() => {
+    let w = 600, h = 400;
+    D.tavoli.forEach(t => {
+      const d = dimTavolo(t);
+      w = Math.max(w, (t.x || 0) + d.w + 40);
+      h = Math.max(h, (t.y || 0) + d.h + 40);
+    });
+    D.elementi.forEach(e => {
+      w = Math.max(w, (e.x || 0) + e.w + 40);
+      h = Math.max(h, (e.y || 0) + e.h + 40);
+    });
+    if (sfondoDim) { w = Math.max(w, sfondoDim.w); h = Math.max(h, sfondoDim.h); }
+    return modifica ? { w: Math.max(w, 1500), h: Math.max(h, 1000) } : { w, h };
+  }, [D.tavoli, D.elementi, D.sfondo, modifica]);
+
+  /* su telefono la piantina si adatta da sola alla larghezza */
+  useEffect(() => {
+    if (mobile && D.pronto && utente && vista === "piantina") { const t = setTimeout(adatta, 60); return () => clearTimeout(t); }
+  }, [mobile, D.pronto, utente, vista]);
+
+  const totali = useMemo(() => ({
+    tavoli: D.tavoli.length,
+    posti: D.tavoli.reduce((s, t) => s + capienza(t), 0),
+    volanti: D.tavoli.reduce((s, t) => s + (t.volanti || 0), 0),
+    uniti: D.tavoli.filter(t => t.gruppo).length
+  }), [D.tavoli]);
+
+  const ripristinaNumeri = () => {
+    if (!totali.uniti) return mostra("Nessun tavolo ha un numero comune");
+    if (!confirm("Ridare il numero originale a tutti i " + totali.uniti + " tavoli uniti?")) return;
+    D.salvaPiantina(D.tavoli.map(t => ({ ...t, gruppo: "" })));
+    D.log("ha ripristinato i numeri originali di tutti i tavoli");
+    mostra("Numeri originali ripristinati");
+  };
+
+  /* --- Ricerca sulla piantina: isola i tavoli che corrispondono --- */
+  const trovati = useMemo(() => {
+    const q = cercaTav.trim().toLowerCase();
+    if (!q) return null;
+    const s = {};
+    let n = 0;
+    D.tavoli.forEach(t => {
+      if (String(t.nome || "").toLowerCase().includes(q) || String(t.gruppo || "").toLowerCase() === q) { s[t.id] = true; n++; }
+    });
+    s.__n = n;
+    return s;
+  }, [cercaTav, D.tavoli]);
+
+  /* porta in vista il primo tavolo trovato */
+  useEffect(() => {
+    if (!trovati || !trovati.__n || !wrapRef.current) return;
+    const t = D.tavoli.filter(x => trovati[x.id]).sort(ordineTavoli)[0];
+    if (!t) return;
+    try {
+      wrapRef.current.scrollTo({
+        left: Math.max(0, t.x * zoom - 120), top: Math.max(0, t.y * zoom - 120), behavior: "smooth"
+      });
+    } catch (e) { }
+  }, [trovati]);
+
+  /* --- Tavoli impilati uno sopra l'altro: quelli sotto sono invisibili e non si possono cliccare --- */
+  const sovrapposti = useMemo(() => {
+    const tenuti = [], coperti = [];
+    D.tavoli.forEach(t => {
+      if (tenuti.some(u => siSovrappongono(t, u))) coperti.push(t); else tenuti.push(t);
+    });
+    return coperti;
+  }, [D.tavoli]);
+
+  const separaTavoli = () => {
+    if (!sovrapposti.length) return mostra("Nessun tavolo sovrapposto");
+    if (!confirm(sovrapposti.length + " tavoli sono impilati sopra ad altri e restano invisibili sulla piantina.\n\n" +
+      "Li sposto nei primi posti liberi della griglia?"))
+      return;
+    const coperti = {}; sovrapposti.forEach(t => { coperti[t.id] = true; });
+    const piazzati = D.tavoli.filter(t => !coperti[t.id]).map(t => ({ ...t }));
+    const nuovi = {};
+    sovrapposti.forEach(t => {
+      const pos = postoLibero(piazzati, t);
+      nuovi[t.id] = pos;
+      piazzati.push({ ...t, ...pos });
+    });
+    D.salvaPiantina(D.tavoli.map(t => (nuovi[t.id] ? { ...t, ...nuovi[t.id] } : t)));
+    D.log("ha separato " + sovrapposti.length + " tavoli che erano impilati");
+    mostra(sovrapposti.length + " tavoli separati: ora si vedono tutti");
+  };
+
+  /* --- Rimette tutti i tavoli in una griglia regolare --- */
+  const riordinaGriglia = () => {
+    if (!D.tavoli.length) return mostra("Non ci sono tavoli");
+    if (!confirm("Rimettere tutti i " + D.tavoli.length + " tavoli in una griglia ordinata, 6 per fila?\n\n" +
+      "Gli elementi (bar, palco…) restano dove sono."))
+      return;
+    const ord = D.tavoli.slice().sort(ordineTavoli);
+    const pos = {};
+    ord.forEach((t, i) => { pos[t.id] = { x: 40 + (i % 6) * 230, y: 40 + Math.floor(i / 6) * 135 }; });
+    D.salvaPiantina(D.tavoli.map(t => ({ ...t, ...pos[t.id] })));
+    D.log("ha rimesso i tavoli in griglia");
+    mostra("Tavoli rimessi in griglia");
+  };
+
+  /* --- Rinumera i tavoli seguendo la piantina: cambiano solo i nomi --- */
+  const rinumeraTavoli = () => {
+    if (!D.tavoli.length) return mostra("Non ci sono tavoli da rinumerare");
+    if (!confirm("Rinumerare i tavoli da T1 a T" + D.tavoli.length +
+      " seguendo l'ordine della piantina (da sinistra a destra, dall'alto in basso)?"))
+      return;
+    const ord = D.tavoli.slice().sort(ordineTavoli);
+    const nuovi = {};
+    ord.forEach((t, i) => { nuovi[t.id] = "T" + (i + 1); });
+    D.salvaPiantina(D.tavoli.map(t => ({ ...t, nome: nuovi[t.id] })));
+    D.log("ha rinumerato i tavoli seguendo l'ordine della piantina");
+    mostra("Tavoli rinumerati da T1 a T" + D.tavoli.length);
+  };
+
+  const aggiungiTavolo = () => {
+    const usati = {}; D.tavoli.forEach(t => { usati[String(t.nome).toUpperCase()] = true; });
+    let k = 1; while (usati["T" + k]) k++;
+    const nome = prompt("Nome del nuovo tavolo:", "T" + k);
+    if (!nome || !nome.trim()) return;
+    if (usati[nome.trim().toUpperCase()]) return alert("Esiste già un tavolo che si chiama " + nome.trim() + ".");
+    const modello = { id: uid(), nome: nome.trim(), posti: 8, orient: "h", x: 40, y: 40 };
+    const pos = postoLibero(D.tavoli, modello);
+    D.salvaPiantina([...D.tavoli, { ...modello, ...pos }]);
+    D.log("ha aggiunto il tavolo " + modello.nome);
+    mostra("Tavolo " + modello.nome + " aggiunto");
+  };
+
+  /* un nuovo elemento nasce a destra di tutto ciò che è già sulla piantina, così non finisce sotto ai tavoli */
+  const nuovoElemento = () => {
+    let x = 40;
+    D.tavoli.forEach(t => { x = Math.max(x, (t.x || 0) + dimTavolo(t).w + 40); });
+    D.elementi.forEach(e => { x = Math.max(x, (e.x || 0) + e.w + 40); });
+    setModale({ tipo: "elemento", dati: { nome: "", w: 300, h: 160, colore: "marrone", x, y: 40 } });
+  };
+
+  const clickTavolo = (t) => {
+    if (drag.current && drag.current.mosso) return;
+    setModale({ tipo: "tavolo", t });
+  };
+  const clickElemento = (e) => {
+    if (drag.current && drag.current.mosso) return;
+    if (isAdmin) setModale({ tipo: "elemento", dati: e });
+  };
+
+  const cambiaVolanti = (tid, delta) => {
+    const t = D.tavoli.find(x => x.id === tid);
+    if (!t) return;
+    const nuovo = Math.min(4, Math.max(0, (t.volanti || 0) + delta));
+    if (nuovo === (t.volanti || 0)) return;
+    D.salvaPiantina(D.tavoli.map(x => (x.id === tid ? { ...x, volanti: nuovo } : x)));
+    D.log((delta > 0 ? "ha aggiunto" : "ha tolto") + " un posto volante al tavolo " + t.nome);
+    mostra(t.nome + ": " + (nuovo ? nuovo + (nuovo === 1 ? " posto volante" : " posti volanti") : "nessun posto volante"));
+  };
+
+  /* --- Spostamento di tavoli ed elementi --- */
+  const dragStart = (e, tipo, o) => {
+    e.preventDefault();
+    const r = planRef.current.getBoundingClientRect();
+    drag.current = { tipo, id: o.id, nome: o.nome, dx: (e.clientX - r.left) / zoom - o.x, dy: (e.clientY - r.top) / zoom - o.y, mosso: false };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const dragMove = (e) => {
+    const g = drag.current;
+    if (!g) return;
+    const r = planRef.current.getBoundingClientRect();
+    const x = Math.max(0, Math.round(((e.clientX - r.left) / zoom - g.dx) / 5) * 5);
+    const y = Math.max(0, Math.round(((e.clientY - r.top) / zoom - g.dy) / 5) * 5);
+    g.mosso = true;
+    g.tavoli = g.tipo === "t" ? D.tavoli.map(t => (t.id === g.id ? { ...t, x, y } : t)) : D.tavoli;
+    g.elementi = g.tipo === "e" ? D.elementi.map(t => (t.id === g.id ? { ...t, x, y } : t)) : D.elementi;
+    D.anteprimaPiantina(g.tavoli, g.elementi);
+  };
+  const dragEnd = () => {
+    const g = drag.current;
+    if (g && g.mosso && !g.salvato) {
+      g.salvato = true;
+      D.salvaPiantina(g.tavoli, g.elementi);
+      D.log("ha spostato " + (g.tipo === "t" ? "il tavolo " : "l'elemento ") + g.nome + " sulla piantina");
+    }
+    setTimeout(() => { drag.current = null; }, 50);
+  };
+
+  /* --- Cartina di sfondo: ridotta e compressa, così sta in un documento Firebase --- */
+  const caricaSfondo = (file) => {
+    if (!file) return;
+    const fr = new FileReader();
+    fr.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const scala = Math.min(1, 1600 / img.width);
+        const c = document.createElement("canvas");
+        c.width = Math.round(img.width * scala); c.height = Math.round(img.height * scala);
+        const ctx = c.getContext("2d");
+        ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height);
+        ctx.drawImage(img, 0, 0, c.width, c.height);
+        let q = 0.72, url = c.toDataURL("image/jpeg", q);
+        while (url.length > 700000 && q > 0.3) { q -= 0.08; url = c.toDataURL("image/jpeg", q); }
+        if (url.length > 900000) return mostra("Immagine troppo pesante: riducila e riprova");
+        D.salvaSfondo({ img: url, ratio: img.width / img.height });
+        D.log("ha caricato la cartina della sala");
+        mostra("Cartina caricata");
+      };
+      img.src = fr.result;
+    };
+    fr.readAsDataURL(file);
+  };
+
+  /* --- PDF della piantina: un foglio A4 orizzontale, pronto da stampare --- */
+  const esportaPdf = () => {
+    if (!window.jspdf || !window.jspdf.jsPDF) return mostra("Libreria PDF non disponibile");
+    const pdf = new window.jspdf.jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+    const LW = pdf.internal.pageSize.getWidth(), LH = pdf.internal.pageSize.getHeight(), M = 10;
+    const oggi = new Date().toLocaleString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+    pdf.setFont("helvetica", "bold"); pdf.setFontSize(15); pdf.setTextColor(20);
+    pdf.text("Vigilia di Natale — Piantina della sala", M, M + 4);
+    pdf.setFont("helvetica", "normal"); pdf.setFontSize(9); pdf.setTextColor(115);
+    pdf.text(totali.tavoli + " tavoli · " + totali.posti + " posti" + (totali.volanti ? " (di cui " + totali.volanti + " volanti)" : "") + " · stampato il " + oggi, M, M + 9);
+
+    const caselle = D.tavoli.map(t => ({ x: t.x || 0, y: t.y || 0, ...dimTavolo(t) }))
+      .concat(D.elementi.map(e => ({ x: e.x || 0, y: e.y || 0, w: e.w, h: e.h })));
+    if (sfondoDim) caselle.push({ x: 0, y: 0, w: sfondoDim.w, h: sfondoDim.h });
+    if (!caselle.length) {
+      pdf.setFontSize(10); pdf.setTextColor(120);
+      pdf.text("La piantina è vuota.", M, M + 20);
+    } else {
+      const x0 = Math.min(...caselle.map(c => c.x)), y0 = Math.min(...caselle.map(c => c.y));
+      const x1 = Math.max(...caselle.map(c => c.x + c.w)), y1 = Math.max(...caselle.map(c => c.y + c.h));
+      const top = M + 13, bottom = LH - M;
+      const s = Math.min((LW - 2 * M) / (x1 - x0), (bottom - top) / (y1 - y0));
+      const offX = M + ((LW - 2 * M) - (x1 - x0) * s) / 2;
+      const offY = top + ((bottom - top) - (y1 - y0) * s) / 2;
+      const px = (v) => offX + (v - x0) * s;
+      const py = (v) => offY + (v - y0) * s;
+
+      if (sfondoDim) pdf.addImage(D.sfondo.img, "JPEG", px(0), py(0), sfondoDim.w * s, sfondoDim.h * s);
+
+      D.elementi.forEach(e => {
+        const col = colore(e.colore);
+        pdf.setFillColor(col.bg); pdf.setDrawColor(col.bg); pdf.setLineWidth(0.3);
+        pdf.roundedRect(px(e.x), py(e.y), e.w * s, e.h * s, 1.5, 1.5, "FD");
+        pdf.setFont("helvetica", "bold"); pdf.setFontSize(10); pdf.setTextColor(col.testo);
+        pdf.text(pdf.splitTextToSize(String(e.nome || ""), Math.max(10, e.w * s - 3)), px(e.x) + e.w * s / 2, py(e.y) + e.h * s / 2,
+          { align: "center", baseline: "middle" });
+      });
+
+      D.tavoli.forEach(t => {
+        const g = dimTavolo(t);
+        const X = px(t.x), Y = py(t.y), W = g.w * s, H = g.h * s;
+        pdf.setFillColor(252, 251, 249); pdf.setDrawColor(150, 145, 135); pdf.setLineWidth(0.3);
+        pdf.roundedRect(X, Y, W, H, 1.2, 1.2, "FD");
+        pdf.setFont("helvetica", "bold"); pdf.setFontSize(Math.max(6, Math.min(11, H * 0.42))); pdf.setTextColor(30);
+        pdf.text(String(etichetta(t)), X + W / 2, Y + H * 0.46, { align: "center" });
+        pdf.setFont("helvetica", "normal"); pdf.setFontSize(Math.max(5, Math.min(7.5, H * 0.3))); pdf.setTextColor(110);
+        pdf.text(capTxt(t) + " posti", X + W / 2, Y + H * 0.8, { align: "center" });
+      });
+    }
+    pdf.save("piantina-vigilia.pdf");
+    D.log("ha esportato il PDF della piantina");
+    mostra("PDF esportato");
+  };
+
+  if (!D.pronto) return <div style={{ padding: 40 }} className="hint">Carico…</div>;
+  if (!utente) return <Login utenti={D.utenti} onEntra={entra} />;
+
+  const puoVedere = (k) => {
+    const s = SEZIONI.find(x => x.k === k);
+    if (!s) return false;
+    if (s.soloAdmin) return isAdmin;
+    if (isAdmin) return true;
+    const p = D.permessi[k];
+    if (!p || !p.riservata) return true;
+    return (p.utenti || []).some(n => norm(n) === norm(utente.nome));
+  };
+  const sezioniVisibili = SEZIONI.filter(s => puoVedere(s.k));
+  const vistaOk = puoVedere(vista) ? vista : (sezioniVisibili[0] ? sezioniVisibili[0].k : null);
+
+  if (!vistaOk) return (
+    <div className="app" style={{ padding: 40 }}>
+      <h1 className="brand">Vigilia <span>di Natale</span></h1>
+      <p className="hint" style={{ marginTop: 12 }}>
+        Ciao <b>{utente.nome}</b>: al momento non hai accesso a nessuna sezione. Chiedi all'admin di abilitarti.
+      </p>
+      <button className="btn ghost sm" style={{ marginTop: 14 }} onClick={esci}>Esci</button>
+    </div>
+  );
+
+  return (
+    <div className="app">
+      {/* ---------- Testata ---------- */}
+      <header className="top no-print">
+        <div className="top-row">
+          <h1 className="brand">Vigilia <span>di Natale</span><small>Sala e conti</small></h1>
+          <div className="spacer" />
+          <div className="stats">
+            <div className="stat"><b className="num">{totali.tavoli}</b><i>tavoli</i></div>
+            <div className="stat ok"><b className="num">{totali.posti}</b><i>posti</i></div>
+            {totali.volanti > 0 && <div className="stat"><b className="num">{totali.volanti}</b><i>volanti</i></div>}
+          </div>
+        </div>
+        <div className="top-row" style={{ marginTop: 8 }}>
+          <div className="tabs">
+            {sezioniVisibili.map(s => (
+              <button key={s.k} className={"tab" + (vistaOk === s.k ? " on" : "")} onClick={() => setVista(s.k)}>{s.l}</button>
+            ))}
+          </div>
+          <div className="spacer" />
+          <div className="cloud">
+            <span className={"dot " + (D.cloud ? "live" : "local")} />
+            {D.cloud ? "sincronizzato" : "solo su questo dispositivo"}
+          </div>
+          <button className="btn ghost sm" title="Chiaro / scuro"
+            onClick={() => setTema(tema === "chiaro" ? "scuro" : "chiaro")}>{tema === "chiaro" ? "☾" : "☀"}</button>
+          <div className="utente-chip">
+            <b>{utente.nome}</b>
+            {isAdmin && <span className="ruolo">admin</span>}
+            <button className="btn ghost sm" onClick={esci}>Esci</button>
+          </div>
+        </div>
+      </header>
+
+      {D.errore && <div className="avviso-db no-print">⚠ {D.errore}</div>}
+
+      {/* ---------- PIANTINA ---------- */}
+      {vistaOk === "piantina" && (
+        <div style={{ marginTop: 14 }}>
+          <div className="plan-bar no-print">
+            {isAdmin && <button className={"btn sm " + (modifica ? "" : "ghost")} onClick={() => setModifica(!modifica)}>{modifica ? "Fine modifica" : "Modifica sala"}</button>}
+            {isAdmin && modifica && <button className="btn ghost sm" onClick={aggiungiTavolo}>+ Tavolo</button>}
+            {isAdmin && modifica && <button className="btn ghost sm" onClick={nuovoElemento}>+ Elemento</button>}
+            {isAdmin && modifica && <button className="btn ghost sm" onClick={riordinaGriglia}>Rimetti in griglia</button>}
+            {isAdmin && modifica && <button className="btn ghost sm" onClick={rinumeraTavoli}>Rinumera in ordine</button>}
+            <button className="btn ghost sm" onClick={() => setZoom(z => Math.max(0.2, +(z - 0.1).toFixed(2)))}>−</button>
+            <span className="num" style={{ minWidth: 42, textAlign: "center" }}>{Math.round(zoom * 100)}%</span>
+            <button className="btn ghost sm" onClick={() => setZoom(z => Math.min(1.6, +(z + 0.1).toFixed(2)))}>+</button>
+            <button className="btn ghost sm" onClick={adatta}>Adatta</button>
+            <button className="btn ghost sm" onClick={esportaPdf}>PDF piantina</button>
+            {!mobile && <input className="plan-cerca" value={cercaTav} onChange={e => setCercaTav(e.target.value)} placeholder="Cerca tavolo…" />}
+            {!mobile && cercaTav.trim() !== "" && <span className="hint">{(trovati && trovati.__n) || 0} trovati</span>}
+            {!mobile && cercaTav.trim() !== "" && <button className="btn ghost sm" onClick={() => setCercaTav("")}>×</button>}
+            <div className="spacer" />
+            {sovrapposti.length > 0 && (
+              <span className="plan-avviso" title={sovrapposti.map(t => t.nome).join(", ")}>
+                ⚠ {sovrapposti.length === 1 ? "1 tavolo nascosto" : sovrapposti.length + " tavoli nascosti"} sotto ad altri
+                <button className="btn ghost sm" style={{ color: "var(--rosso)", borderColor: "rgba(228,91,109,.45)" }}
+                  onClick={separaTavoli}>Separa</button>
+              </span>
+            )}
+            <span className="hint plan-istr">{modifica ? "Trascina per spostare, tocca per modificare" : "Tocca un tavolo per il dettaglio"}</span>
+          </div>
+
+          <div className="plan-wrap" ref={wrapRef}>
+            <div className="scaler" style={{ width: Math.round(dimPiantina.w * zoom), height: Math.round(dimPiantina.h * zoom) }}>
+              <div className="plan" ref={planRef} style={{ width: dimPiantina.w, height: dimPiantina.h, transform: "scale(" + zoom + ")" }}
+                onPointerMove={dragMove} onPointerUp={dragEnd} onPointerCancel={dragEnd}>
+                {sfondoDim && <div className="plan-bg" style={{ backgroundImage: "url(" + D.sfondo.img + ")", right: "auto", bottom: "auto", width: sfondoDim.w, height: sfondoDim.h }} />}
+                {D.elementi.map(e => {
+                  const col = colore(e.colore);
+                  const ed = modifica && isAdmin;
+                  return (
+                    <div key={e.id} className={"elemento" + (ed ? " editabile" : "")} title={e.nome}
+                      style={{ left: e.x, top: e.y, width: e.w, height: e.h, background: col.bg, color: col.testo }}
+                      onPointerDown={ed ? (ev) => dragStart(ev, "e", e) : undefined}
+                      onClick={() => clickElemento(e)}>{e.nome}</div>
+                  );
+                })}
+                {D.tavoli.map(t => (
+                  <Tavolo key={t.id} t={t}
+                    trovato={!!(trovati && trovati[t.id])} spento={!!(trovati && trovati.__n && !trovati[t.id])}
+                    modifica={modifica && isAdmin} onClick={clickTavolo} onDragStart={dragStart} />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ---------- COSTI & RICAVI ---------- */}
+      {vistaOk === "finanze" && (
+        <FinanzeView finanze={D.finanze} pronte={D.finanzePronte} onSalva={D.salvaFinanze} log={D.log} mostra={mostra} />
+      )}
+
+      {/* ---------- IMPOSTAZIONI ---------- */}
+      {vistaOk === "impostazioni" && (
+        <div className="split due">
+          <div className="panel">
+            <h2>Sala</h2>
+            <p className="hint">Rigenera la griglia dei tavoli: la disposizione attuale viene sostituita, gli elementi (bar, palco…) restano.</p>
+            <Genera onGenera={(n, cols, posti) => {
+              const t = piantinaDefault(n, cols).map(x => ({ ...x, posti }));
+              D.salvaPiantina(t); D.log("ha rigenerato la piantina: " + n + " tavoli da " + posti); mostra(n + " tavoli generati");
+            }} />
+            <div className="field" style={{ marginTop: 14 }}>
+              <label>Cartina della sala (immagine di sfondo)</label>
+              <input type="file" accept="image/*" onChange={e => { caricaSfondo(e.target.files[0]); e.target.value = ""; }} />
+            </div>
+            {D.sfondo && (
+              <button className="btn ghost sm" onClick={() => {
+                if (!confirm("Togliere la cartina di sfondo?")) return;
+                D.salvaSfondo(null); D.log("ha tolto la cartina della sala"); mostra("Cartina tolta");
+              }}>Togli la cartina</button>
+            )}
+            {totali.uniti > 0 && <button className="btn ghost sm" onClick={ripristinaNumeri} style={{ marginLeft: 8 }}>Numeri originali ({totali.uniti})</button>}
+          </div>
+          <div className="panel">
+            <h2>Dati</h2>
+            <p className="hint">
+              Stato archivio: <b>{D.cloud ? "Firebase attivo" : "locale (nessun Firebase configurato)"}</b>.<br />
+              Tavoli: <b className="num">{totali.tavoli}</b> · Posti totali: <b className="num">{totali.posti}</b>
+            </p>
+            <div className="row" style={{ marginTop: 10 }}>
+              <button className="btn ghost sm" onClick={esportaPdf}>PDF piantina</button>
+              <button className="btn ghost sm" onClick={() => {
+                navigator.clipboard.writeText(JSON.stringify({ tavoli: D.tavoli, elementi: D.elementi }, null, 2));
+                mostra("Dati copiati negli appunti");
+              }}>Copia JSON</button>
+            </div>
+          </div>
+
+          <div className="panel">
+            <h2>Utenti</h2>
+            <p className="hint">Ogni persona entra con il proprio nome: la password è il nome stesso, tutto minuscolo. Le password qui sotto sono visibili solo a te che sei admin.</p>
+            <Utenti utenti={D.utenti} onSalva={(lista, azione) => { D.salvaUtenti(lista); D.log(azione); mostra("Utenti aggiornati"); }} />
+          </div>
+
+          <div className="panel">
+            <h2>Sezioni riservate</h2>
+            <p className="hint">
+              Una sezione riservata la vedono solo tu e le persone che autorizzi qui sotto: per gli altri sparisce dal menu.
+              Le Impostazioni (utenti, permessi, registro attività) restano sempre solo tue.
+            </p>
+            <Permessi permessi={D.permessi} utenti={D.utenti}
+              onSalva={(next, azione) => { D.salvaPermessi(next); D.log(azione); mostra("Permessi aggiornati"); }} />
+          </div>
+
+          <div className="panel">
+            <h2>Registro attività</h2>
+            <p className="hint">Chi ha fatto cosa, dal più recente. {D.cloud ? "Ultime 150 azioni sincronizzate." : "Ultime 200 azioni su questo dispositivo."}</p>
+            <div className="log-lista" style={{ marginTop: 10 }}>
+              {D.attivita.length === 0 && <p className="hint">Ancora nessuna azione registrata.</p>}
+              {D.attivita.map((a, i) => (
+                <div key={i} className="log-riga">
+                  <time>{quando(a.ts)}</time><b>{a.utente}</b><span>{a.azione}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ---------- Navigazione telefono ---------- */}
+      <nav className="bottom-nav no-print">
+        {sezioniVisibili.map(s => (
+          <button key={s.k} className={vistaOk === s.k ? "on" : ""} onClick={() => setVista(s.k)}>{s.nav}</button>
+        ))}
+      </nav>
+
+      {/* ---------- Modali ---------- */}
+      {modale && modale.tipo === "tavolo" && (
+        <ModaleTavolo t={D.tavoli.find(x => x.id === modale.t.id) || modale.t} isAdmin={isAdmin}
+          onChiudi={() => setModale(null)}
+          onVolanti={(d) => cambiaVolanti(modale.t.id, d)}
+          onGruppo={(g) => {
+            const t = D.tavoli.find(x => x.id === modale.t.id); if (!t) return;
+            D.salvaPiantina(D.tavoli.map(x => (x.id === t.id ? { ...x, gruppo: g } : x)));
+            D.log(g ? "ha dato il numero " + g + " al tavolo " + t.nome : "ha ridato il numero originale al tavolo " + t.nome);
+            mostra(g ? t.nome + " ora si chiama " + g : t.nome + " ha di nuovo il suo numero");
+          }}
+          onSalva={(t) => { D.salvaPiantina(D.tavoli.map(x => (x.id === t.id ? { ...t, volanti: x.volanti || 0, gruppo: x.gruppo || "" } : x))); D.log("ha modificato il tavolo " + t.nome); setModale(null); mostra("Tavolo salvato"); }}
+          onElimina={(id) => { D.salvaPiantina(D.tavoli.filter(x => x.id !== id)); D.log("ha rimosso il tavolo " + modale.t.nome); setModale(null); mostra("Tavolo rimosso"); }} />
+      )}
+      {modale && modale.tipo === "elemento" && (
+        <ModaleElemento dati={modale.dati} onChiudi={() => setModale(null)}
+          onSalva={(e) => {
+            const next = e.id ? D.elementi.map(x => (x.id === e.id ? e : x)) : [...D.elementi, { ...e, id: uid() }];
+            D.salvaPiantina(D.tavoli, next);
+            D.log((e.id ? "ha modificato l'elemento " : "ha aggiunto l'elemento ") + e.nome);
+            setModale(null); mostra("Elemento salvato");
+          }}
+          onElimina={(e) => {
+            D.salvaPiantina(D.tavoli, D.elementi.filter(x => x.id !== e.id));
+            D.log("ha rimosso l'elemento " + e.nome);
+            setModale(null); mostra("Elemento rimosso");
+          }} />
+      )}
+
+      {toast && <div className="toast">{toast}</div>}
+    </div>
+  );
+}
+
+/* =========================================================
+   COSTI & RICAVI (budget, consuntivo, ripartizione) + Anagrafica
+   ========================================================= */
+function FinanzeView({ finanze, pronte, onSalva: salvaDoc, log, mostra }) {
+  const voci = finanze.voci || [];
+  const soggetti = finanze.soggetti || [];
+  /* finché non sono state salvate, si usano le tre associazioni di partenza (senza scriverle subito nel database) */
+  const enti = finanze.enti ? finanze.enti : ENTI_DEFAULT;
+  const onSalva = (next) => salvaDoc({ ...next, enti: next.enti || enti });
+  const [sotto, setSotto] = useState("voci");
+  const [filtro, setFiltro] = useState("tutte");
+  const [filtroEnte, setFiltroEnte] = useState("");
+  const [modaleVoce, setModaleVoce] = useState(null);
+  const [nuovoSoggetto, setNuovoSoggetto] = useState({ nome: "", tipo: "fornitore", contatto: "", retro: 100 });
+  const [nuovoEnte, setNuovoEnte] = useState("");
+
+
+  const nomeSoggetto = (id) => { const s = soggetti.find(x => x.id === id); return s ? s.nome : "—"; };
+  const nomeEnte = (id) => { const e = enti.find(x => x.id === id); return e ? e.nome : "—"; };
+
+  const R = useMemo(() => calcolaRipartizione(voci, enti), [voci, enti]);
+
+  const listaVoci = useMemo(() => {
+    let l = voci.slice();
+    if (["costo", "ricavo", "prelievo", "fondo"].indexOf(filtro) >= 0) l = l.filter(v => (v.tipo || "costo") === filtro);
+    if (filtro === "daconsuntivare") l = l.filter(v => v.consuntivo === null || v.consuntivo === undefined);
+    if (filtroEnte) l = l.filter(v => (v.ente || "") === filtroEnte);
+    return l.sort((a, b) => (b.creata || 0) - (a.creata || 0));
+  }, [voci, filtro, filtroEnte]);
+
+  const salvaVoce = (v) => {
+    const dati = { ...v, ...firma() };
+    const next = voci.some(x => x.id === dati.id)
+      ? voci.map(x => (x.id === dati.id ? dati : x))
+      : [...voci, { ...dati, id: dati.id || uid() }];
+    onSalva({ ...finanze, voci: next });
+    log((v.id ? "ha modificato la voce " : "ha inserito la voce ") + v.voce + " (" + tipoVoceLabel(v.tipo) + ")");
+    setModaleVoce(null); mostra("Voce salvata");
+  };
+  const eliminaVoce = (id) => {
+    const v = voci.find(x => x.id === id);
+    onSalva({ ...finanze, voci: voci.filter(x => x.id !== id) });
+    log("ha eliminato la voce " + (v ? v.voce : id));
+    setModaleVoce(null); mostra("Voce eliminata");
+  };
+
+  const patchSoggetto = (id, patch, azione) => {
+    onSalva({ ...finanze, soggetti: soggetti.map(s => (s.id === id ? { ...s, ...patch, ...firma() } : s)) });
+    if (azione) log(azione);
+  };
+  const eliminaSoggetto = (id) => {
+    const s = soggetti.find(x => x.id === id);
+    if (voci.some(v => v.soggetto === id) && !confirm("Ci sono voci collegate a " + (s ? s.nome : "questa controparte") + ". Eliminarla comunque?")) return;
+    onSalva({ ...finanze, soggetti: soggetti.filter(x => x.id !== id) });
+    log("ha eliminato dall'anagrafica " + (s ? s.nome : id));
+    mostra("Eliminato dall'anagrafica");
+  };
+  const aggiungiSoggetto = () => {
+    const n = nuovoSoggetto.nome.trim(); if (!n) return;
+    if (soggetti.some(s => s.nome.toLowerCase() === n.toLowerCase())) return mostra(n + " è già in anagrafica");
+    const s = {
+      id: uid(), nome: n, tipo: nuovoSoggetto.tipo, contatto: nuovoSoggetto.contatto.trim(), note: "",
+      retro: nuovoSoggetto.tipo === "attivita" ? (parseFloat(nuovoSoggetto.retro) || 0) : 100, ...firma()
+    };
+    onSalva({ ...finanze, soggetti: [...soggetti, s] });
+    log("ha aggiunto in anagrafica " + n);
+    setNuovoSoggetto({ nome: "", tipo: "fornitore", contatto: "", retro: 100 });
+    mostra("Aggiunto all'anagrafica");
+  };
+
+  const patchEnte = (id, patch, azione) => {
+    onSalva({ ...finanze, enti: enti.map(e => (e.id === id ? { ...e, ...patch } : e)) });
+    if (azione) log(azione);
+  };
+  const aggiungiEnte = () => {
+    const n = nuovoEnte.trim(); if (!n) return;
+    if (enti.some(e => e.nome.toLowerCase() === n.toLowerCase())) return mostra(n + " c'è già");
+    const quota = +(100 / (enti.length + 1)).toFixed(2);
+    const next = enti.map((e, i) => ({ ...e, quota: i === 0 ? +(100 - quota * enti.length).toFixed(2) : quota })).concat([{ id: uid(), nome: n, quota }]);
+    onSalva({ ...finanze, enti: next });
+    log("ha aggiunto l'associazione " + n);
+    setNuovoEnte(""); mostra("Associazione aggiunta");
+  };
+  const eliminaEnte = (id) => {
+    const e = enti.find(x => x.id === id);
+    if (voci.some(v => v.ente === id) && !confirm("Ci sono voci intestate a " + (e ? e.nome : "questa associazione") + ". Eliminarla comunque?")) return;
+    onSalva({ ...finanze, enti: enti.filter(x => x.id !== id) });
+    log("ha eliminato l'associazione " + (e ? e.nome : id));
+  };
+  const quoteParitarie = () => {
+    if (!enti.length) return;
+    const q = +(100 / enti.length).toFixed(2);
+    const next = enti.map((e, i) => ({ ...e, quota: i === 0 ? +(100 - q * (enti.length - 1)).toFixed(2) : q }));
+    onSalva({ ...finanze, enti: next });
+    log("ha messo le quote in parti uguali");
+    mostra("Quote in parti uguali");
+  };
+
+  /* ---------- Esportazioni ---------- */
+  const righeDettaglio = () => {
+    const h = ["Tipo", "Voce", "Associazione", "Controparte", "Preventivo", "Consuntivo", "Importo usato",
+      "% alle associazioni", "Netto associazioni", "Da girare", "Ripartita", "Data", "Note"];
+    const r = voci.slice().sort((a, b) => String(a.tipo).localeCompare(String(b.tipo)) || String(a.voce).localeCompare(String(b.voce), "it")).map(v => {
+      const imp = importoVoce(v), q = quotaAssoc(v);
+      const netto = v.tipo === "ricavo" ? imp * q / 100 : imp;
+      const et = (TIPI_VOCE.find(t => t.id === (v.tipo || "costo")) || TIPI_VOCE[0]).label + (fondoRestituito(v) ? " (restituito)" : "") + (fondoNegliIncassi(v) || ricavoNegliIncassi(v) ? " (già nelle casse)" : "");
+      return [et, v.voce, nomeEnte(v.ente), nomeSoggetto(v.soggetto),
+        Number(v.preventivo) || 0, (v.consuntivo === null || v.consuntivo === undefined) ? "" : Number(v.consuntivo) || 0,
+        imp, v.tipo === "ricavo" ? q : 100, +netto.toFixed(2), v.tipo === "ricavo" ? +(imp - netto).toFixed(2) : 0,
+        v.ripartita === false ? "no" : "sì", v.data || "", v.note || ""];
+    });
+    return [h].concat(r);
+  };
+  const righeEnti = () => {
+    const h = ["Associazione", "Incassato lordo", "Prelievi in natura", "Da girare alle attività", "Costi pagati", "Disponibile",
+      "Fondo cassa da restituire", "Quota %", "Spettante", "Conguaglio", "Voci proprie (non ripartite)"];
+    const r = R.enti.map(e => [e.ente.nome, +e.incassi.toFixed(2), +e.prelievi.toFixed(2), +e.daGirare.toFixed(2), +e.costi.toFixed(2),
+      +e.disponibile.toFixed(2), +e.fondi.toFixed(2), Number(e.ente.quota) || 0, +e.spettante.toFixed(2), +e.conguaglio.toFixed(2), +e.propri.toFixed(2)]);
+    return [h].concat(r);
+  };
+  const righeControparti = () => {
+    const h = ["Controparte", "Tipo", "Incassato lordo", "% alle associazioni", "Da girare a loro", "Costi verso di loro", "Saldo (a loro favore)"];
+    const r = R.controparti.map(c => {
+      const s = soggetti.find(x => x.id === c.id);
+      return [s ? s.nome : "(senza controparte)", s ? tipoSoggettoLabel(s.tipo) : "—", +c.incassato.toFixed(2),
+        c.incassato ? +(100 - c.daGirare / c.incassato * 100).toFixed(2) : "", +c.daGirare.toFixed(2), +c.costi.toFixed(2),
+        +(c.daGirare + c.costi).toFixed(2)];
+    });
+    return [h].concat(r);
+  };
+  const righeRiepilogo = () => ([
+    ["Riepilogo Vigilia di Natale", ""],
+    ["Aggiornato al", new Date().toLocaleString("it-IT")],
+    ["", ""],
+    ["Incasso lordo (casse e POS)", +R.ricaviLordi.toFixed(2)],
+    ["Fondo cassa compreso negli incassi", +R.fondoIncassi.toFixed(2)],
+    ["Quota delle attività commerciali", +R.girate.toFixed(2)],
+    ["Incasso delle associazioni", +R.incassoAssoc.toFixed(2)],
+    ["Merce tenuta dalle associazioni (prelievi)", +R.prelievi.toFixed(2)],
+    ["Costi", +R.costi.toFixed(2)],
+    ["Risultato da ripartire", +R.risultato.toFixed(2)],
+    ["", ""],
+    ["Fondi cassa anticipati, da restituire", +R.fondi.toFixed(2)],
+    ["Fondi cassa già restituiti", +R.fondiRestituiti.toFixed(2)],
+    ["Voci non ripartite (di singole associazioni)", +R.propri.toFixed(2)],
+    ["Voci senza associazione", R.senzaEnte],
+    ["Voci ancora da consuntivare", R.daConsuntivare]
+  ]);
+
+  const esportaExcel = () => {
+    if (!window.XLSX) return mostra("Libreria Excel non disponibile");
+    const wb = window.XLSX.utils.book_new();
+    window.XLSX.utils.book_append_sheet(wb, window.XLSX.utils.aoa_to_sheet(righeRiepilogo()), "Riepilogo");
+    window.XLSX.utils.book_append_sheet(wb, window.XLSX.utils.aoa_to_sheet(righeEnti()), "Ripartizione");
+    window.XLSX.utils.book_append_sheet(wb, window.XLSX.utils.aoa_to_sheet(righeControparti()), "Controparti");
+    window.XLSX.utils.book_append_sheet(wb, window.XLSX.utils.aoa_to_sheet(righeDettaglio()), "Dettaglio");
+    window.XLSX.writeFile(wb, "costi-ricavi-vigilia.xlsx");
+    log("ha esportato costi, ricavi e ripartizione in Excel");
+    mostra("Excel esportato");
+  };
+
+  const esportaPdf = () => {
+    if (!window.jspdf || !window.jspdf.jsPDF) return mostra("Libreria PDF non disponibile");
+    const pdf = new window.jspdf.jsPDF({ orientation: "landscape", unit: "mm", format: "a4", compress: true });
+    if (typeof pdf.autoTable !== "function") return mostra("Modulo tabelle PDF non caricato: ricarica la pagina");
+    const PW = pdf.internal.pageSize.getWidth(), PH = pdf.internal.pageSize.getHeight(), M = 12;
+    const ACC = [192, 118, 26], INK = [28, 26, 34], GRIGIO = [120, 116, 128], VERDE = [27, 135, 100], ROSSO = [190, 55, 72];
+    const pct = (n) => (Number(n) || 0).toLocaleString("it-IT", { maximumFractionDigits: 2 }) + "%";
+    const stampato = new Date().toLocaleString("it-IT", { dateStyle: "short", timeStyle: "short" });
+    const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
+    let y = M;
+
+    /* --- intestazione --- */
+    pdf.setFillColor(...ACC); pdf.rect(0, 0, PW, 3, "F");
+    pdf.setFont("helvetica", "bold"); pdf.setFontSize(18); pdf.setTextColor(...INK);
+    pdf.text("Vigilia di Natale", M, y + 7);
+    pdf.setFont("helvetica", "normal"); pdf.setFontSize(12); pdf.setTextColor(...GRIGIO);
+    pdf.text("Costi, ricavi e ripartizione fra le associazioni", M, y + 13);
+    pdf.setFontSize(8.5);
+    pdf.text("Stampato il " + stampato, PW - M, y + 7, { align: "right" });
+    pdf.text("Importi consuntivi dove presenti, altrimenti preventivi", PW - M, y + 12, { align: "right" });
+    y += 19;
+
+    /* --- riquadri chiave --- */
+    const kpi = [
+      ["Ricavi netti", R.ricaviNetti, INK],
+      ["Costi", R.costi, INK],
+      ["Risultato da ripartire", R.risultato, R.risultato >= 0 ? VERDE : ROSSO],
+      ["Fondi cassa da restituire", R.fondi, INK]
+    ];
+    const gap = 4, kw = (PW - 2 * M - gap * (kpi.length - 1)) / kpi.length, kh = 16;
+    kpi.forEach(([lab, val, col], i) => {
+      const x = M + i * (kw + gap);
+      pdf.setFillColor(248, 245, 239); pdf.setDrawColor(225, 218, 205); pdf.setLineWidth(0.2);
+      pdf.roundedRect(x, y, kw, kh, 2, 2, "FD");
+      pdf.setFont("helvetica", "normal"); pdf.setFontSize(7.5); pdf.setTextColor(...GRIGIO);
+      pdf.text(lab.toUpperCase(), x + 4, y + 5.5);
+      pdf.setFont("helvetica", "bold"); pdf.setFontSize(13); pdf.setTextColor(...col);
+      pdf.text(euro(val), x + 4, y + 12.5);
+    });
+    y += kh + 5;
+
+    /* --- controlli di quadratura --- */
+    const sommaCong = round2(R.enti.reduce((t, e) => t + e.conguaglio, 0));
+    const avvisi = [];
+    if (R.enti.length && R.quotaTot !== 100) avvisi.push("Le quote sommano " + pct(R.quotaTot) + " invece di 100%: la ripartizione non quadra.");
+    if (R.senzaEnte > 0) avvisi.push(R.senzaEnte + (R.senzaEnte === 1 ? " voce non è intestata" : " voci non sono intestate") + " a nessuna associazione: entrano nel risultato ma non nella cassa di nessuno.");
+    if (Math.abs(sommaCong) >= 0.01) avvisi.push("La somma dei conguagli è " + euro(sommaCong) + " (dovrebbe essere zero).");
+    if (R.daConsuntivare > 0) avvisi.push(R.daConsuntivare + (R.daConsuntivare === 1 ? " voce è" : " voci sono") + " ancora a preventivo: i numeri sono provvisori.");
+    if (avvisi.length) {
+      pdf.setFont("helvetica", "normal"); pdf.setFontSize(8.5);
+      const righe = avvisi.flatMap(a => pdf.splitTextToSize("•  " + a, PW - 2 * M - 8));
+      const h = righe.length * 4 + 5;
+      pdf.setFillColor(253, 243, 230); pdf.setDrawColor(...ACC); pdf.setLineWidth(0.3);
+      pdf.roundedRect(M, y, PW - 2 * M, h, 1.5, 1.5, "FD");
+      pdf.setTextColor(120, 70, 10);
+      righe.forEach((r, i) => pdf.text(r, M + 4, y + 5 + i * 4));
+      y += h + 5;
+    } else {
+      pdf.setFont("helvetica", "normal"); pdf.setFontSize(8.5); pdf.setTextColor(...VERDE);
+      pdf.text("Quadratura ok: quote al 100%, tutte le voci intestate, conguagli a somma zero.", M, y + 1);
+      y += 6;
+    }
+
+    /* --- stile comune tabelle --- */
+    const base = {
+      theme: "grid",
+      margin: { left: M, right: M, top: M + 4, bottom: 14 },
+      styles: { font: "helvetica", fontSize: 8.5, cellPadding: { top: 1.8, bottom: 1.8, left: 2, right: 2 }, textColor: INK, lineColor: [228, 222, 210], lineWidth: 0.15, valign: "middle", overflow: "linebreak" },
+      headStyles: { fillColor: [44, 40, 54], textColor: 255, fontStyle: "bold", fontSize: 7.8, valign: "bottom" },
+      footStyles: { fillColor: [240, 235, 225], textColor: INK, fontStyle: "bold" },
+      alternateRowStyles: { fillColor: [250, 248, 244] },
+      showFoot: "lastPage"
+    };
+    const titoloSezione = (t, nota) => {
+      if (y > PH - 40) { pdf.addPage(); y = M + 4; }
+      pdf.setFont("helvetica", "bold"); pdf.setFontSize(12.5); pdf.setTextColor(...INK);
+      pdf.text(t, M, y);
+      if (nota) { pdf.setFont("helvetica", "normal"); pdf.setFontSize(8); pdf.setTextColor(...GRIGIO); pdf.text(nota, M, y + 4.2); }
+      y += nota ? 7 : 3.5;
+    };
+    const dopo = () => { y = pdf.lastAutoTable.finalY + 9; };
+    const num = (n) => euro(n);
+
+    /* --- 1. Ripartizione --- */
+    titoloSezione("Ripartizione fra le associazioni", "Conguaglio positivo = l'associazione deve ricevere · negativo = deve versare");
+    const tot = (k) => R.enti.reduce((t, e) => t + (Number(e[k]) || 0), 0);
+    pdf.autoTable({
+      ...base, startY: y,
+      head: [["Associazione", "Quota", "Incassato lordo", "Prelievi in natura", "Da girare alle attività", "Costi pagati", "Disponibile", "Fondo cassa anticipato", "Spettante", "Conguaglio", "Voci proprie"]],
+      body: R.enti.map(e => [e.ente.nome, pct(e.ente.quota), num(e.incassi), num(e.prelievi), num(e.daGirare), num(e.costi),
+        num(e.disponibile), num(e.fondi), num(e.spettante), num(e.conguaglio), e.propri ? num(e.propri) : "—"]),
+      foot: [["Totale", pct(R.quotaTot), num(tot("incassi")), num(tot("prelievi")), num(tot("daGirare")), num(tot("costi")),
+        num(tot("disponibile")), num(tot("fondi")), num(tot("spettante")), num(sommaCong), num(tot("propri"))]],
+      columnStyles: { 0: { cellWidth: 38, fontStyle: "bold" }, 1: { halign: "right", cellWidth: 16 }, ...Object.fromEntries([2, 3, 4, 5, 6, 7, 8, 9, 10].map(i => [i, { halign: "right" }])) },
+      didParseCell: (d) => {
+        if (d.section !== "head" && d.column.index > 0) d.cell.styles.halign = "right";
+        if (d.section === "body" && d.column.index === 9) {
+          const v = R.enti[d.row.index].conguaglio;
+          d.cell.styles.fontStyle = "bold";
+          d.cell.styles.textColor = Math.abs(v) < 0.005 ? INK : (v > 0 ? VERDE : ROSSO);
+        }
+      }
+    });
+    dopo();
+
+    /* --- 2. Chi versa a chi (pareggio dei conguagli) --- */
+    const giri = calcolaVersamenti(R.enti).map(g => [g.da, g.a, num(g.importo)]);
+    if (giri.length) {
+      titoloSezione("Versamenti per chiudere i conti", "Proposta con il minor numero di bonifici; i fondi cassa anticipati sono già compresi");
+      pdf.autoTable({
+        ...base, startY: y, tableWidth: 150,
+        head: [["Chi versa", "A chi", "Importo"]],
+        body: giri,
+        columnStyles: { 2: { halign: "right", fontStyle: "bold" } },
+        didParseCell: (d) => { if (d.section === "head" && d.column.index === 2) d.cell.styles.halign = "right"; }
+      });
+      dopo();
+    }
+
+    /* --- 3. Riepilogo --- */
+    titoloSezione("Riepilogo");
+    pdf.autoTable({
+      ...base, startY: y, tableWidth: 150,
+      head: [["Voce", "Importo"]],
+      body: [
+        ["Incasso lordo (casse e POS)", num(R.ricaviLordi)],
+        ["  meno fondo cassa compreso negli incassi", num(R.fondoIncassi)],
+        ["  meno quota delle attività commerciali", num(R.girate)],
+        ["Incasso delle associazioni", num(R.incassoAssoc)],
+        ["  più merce tenuta dalle associazioni (prelievi)", num(R.prelievi)],
+        ["Costi", num(R.costi)],
+        ["Risultato da ripartire", num(R.risultato)],
+        ["Fondi cassa anticipati, da restituire", num(R.fondi)],
+        ["Fondi cassa già restituiti", num(R.fondiRestituiti)],
+        ["Voci non ripartite (di singole associazioni)", num(R.propri)],
+        ["Voci senza associazione", String(R.senzaEnte)],
+        ["Voci ancora da consuntivare", String(R.daConsuntivare)]
+      ],
+      columnStyles: { 1: { halign: "right" } },
+      didParseCell: (d) => {
+        if (d.section === "head" && d.column.index === 1) d.cell.styles.halign = "right";
+        if (d.section === "body" && (d.row.index === 6 || d.row.index === 3)) { d.cell.styles.fontStyle = "bold"; d.cell.styles.fillColor = [240, 235, 225]; }
+        if (d.section === "body" && d.column.index === 0 && String(d.cell.raw).startsWith("  ")) d.cell.styles.textColor = GRIGIO;
+      }
+    });
+    dopo();
+
+    /* --- 3-bis. Scorporo attività commerciali --- */
+    if (R.attivita.length) {
+      titoloSezione("Attività commerciali: scorporo", "Venduto, quota girata alle attività e quota che resta alle associazioni");
+      pdf.autoTable({
+        ...base, startY: y, tableWidth: 190,
+        head: [["Attività", "Venduto", "Alle attività", "Alle associazioni"]],
+        body: R.attivita.map(a => [a.id ? nomeSoggetto(a.id) : "(senza controparte)", num(a.venduto), num(a.aLoro), num(a.aNoi)]),
+        foot: [["Totale", num(R.attivita.reduce((t, a) => t + a.venduto, 0)), num(R.attivita.reduce((t, a) => t + a.aLoro, 0)), num(R.attivita.reduce((t, a) => t + a.aNoi, 0))]],
+        didParseCell: (d) => { if (d.column.index >= 1) d.cell.styles.halign = "right"; }
+      });
+      dopo();
+    }
+
+    /* --- 4. Controparti --- */
+    const cp = righeControparti().slice(1);
+    if (cp.length) {
+      titoloSezione("Controparti", "Importi verso fornitori, attività e altri soggetti");
+      pdf.autoTable({
+        ...base, startY: y,
+        head: [["Controparte", "Tipo", "Incassato lordo", "% alle associazioni", "Da girare a loro", "Costi verso di loro", "Totale verso di loro"]],
+        body: cp.map(r => [r[0], r[1], num(r[2]), r[3] === "" ? "—" : pct(r[3]), num(r[4]), num(r[5]), num(r[6])]),
+        foot: [["Totale", "", num(cp.reduce((t, r) => t + r[2], 0)), "", num(cp.reduce((t, r) => t + r[4], 0)), num(cp.reduce((t, r) => t + r[5], 0)), num(cp.reduce((t, r) => t + r[6], 0))]],
+        columnStyles: { 0: { cellWidth: 60, fontStyle: "bold" }, 1: { cellWidth: 32 } },
+        didParseCell: (d) => { if (d.column.index >= 2) d.cell.styles.halign = "right"; }
+      });
+      dopo();
+    }
+
+    /* --- 5. Dettaglio voci --- */
+    const det = righeDettaglio().slice(1);
+    titoloSezione("Dettaglio voci", det.length + (det.length === 1 ? " voce" : " voci"));
+    pdf.autoTable({
+      ...base, startY: y,
+      styles: { ...base.styles, fontSize: 7.8 },
+      head: [["Tipo", "Voce", "Associazione", "Controparte", "Preventivo", "Consuntivo", "Importo usato", "% assoc.", "Netto assoc.", "Da girare", "Rip.", "Note"]],
+      body: det.map(r => [r[0], r[1], r[2], r[3], num(r[4]), r[5] === "" ? "da fare" : num(r[5]), num(r[6]),
+        r[0].startsWith("Ricavo") ? pct(r[7]) : "", num(r[8]), r[9] ? num(r[9]) : "", r[10], [r[11], r[12]].filter(Boolean).join(" · ")]),
+      columnStyles: {
+        0: { cellWidth: 20 }, 1: { cellWidth: 44, fontStyle: "bold" }, 2: { cellWidth: 26 }, 3: { cellWidth: 28 },
+        4: { cellWidth: 21 }, 5: { cellWidth: 21 }, 6: { cellWidth: 21 }, 7: { cellWidth: 14 }, 8: { cellWidth: 21 }, 9: { cellWidth: 19 }, 10: { cellWidth: 9, halign: "center" }
+      },
+      didParseCell: (d) => {
+        if ([4, 5, 6, 7, 8, 9].includes(d.column.index)) d.cell.styles.halign = "right";
+        if (d.section === "body" && d.column.index === 5 && d.cell.raw === "da fare") { d.cell.styles.textColor = ACC; d.cell.styles.fontStyle = "italic"; }
+        if (d.section === "body" && d.column.index === 10 && d.cell.raw === "no") d.cell.styles.textColor = ROSSO;
+      }
+    });
+
+    /* --- piè di pagina --- */
+    const n = pdf.internal.getNumberOfPages();
+    for (let p = 1; p <= n; p++) {
+      pdf.setPage(p);
+      pdf.setDrawColor(225, 218, 205); pdf.setLineWidth(0.2); pdf.line(M, PH - 9, PW - M, PH - 9);
+      pdf.setFont("helvetica", "normal"); pdf.setFontSize(7.5); pdf.setTextColor(150);
+      pdf.text("Vigilia di Natale — costi, ricavi e ripartizione · " + stampato, M, PH - 5.5);
+      pdf.text("Pagina " + p + " di " + n, PW - M, PH - 5.5, { align: "right" });
+    }
+    pdf.save("costi-ricavi-vigilia.pdf");
+    log("ha esportato il PDF di costi, ricavi e ripartizione");
+    mostra("PDF esportato");
+  };
+
+  const versamenti = useMemo(() => calcolaVersamenti(R.enti), [R]);
+
+  if (!pronte) return <div style={{ padding: 40 }} className="hint">Carico costi e ricavi…</div>;
+
+  return (
+    <div style={{ marginTop: 16 }}>
+      <div className="stats" style={{ marginBottom: 14 }}>
+        <div className="stat ok"><b className="num">{euro(R.ricaviNetti)}</b><i>ricavi netti</i></div>
+        <div className="stat bad"><b className="num">{euro(R.costi)}</b><i>costi</i></div>
+        <div className={"stat " + (R.risultato >= 0 ? "ok" : "bad")}><b className="num">{euro(R.risultato)}</b><i>da ripartire</i></div>
+        <div className="stat warn"><b className="num">{euro(R.girate)}</b><i>alle attività</i></div>
+        {R.fondi > 0 && <div className="stat warn"><b className="num">{euro(R.fondi)}</b><i>fondo cassa</i></div>}
+        <div className={"stat " + (R.daConsuntivare > 0 ? "warn" : "")}><b className="num">{R.daConsuntivare}</b><i>da consuntivare</i></div>
+        {R.senzaEnte > 0 && <div className="stat bad"><b className="num">{R.senzaEnte}</b><i>senza associazione</i></div>}
+      </div>
+
+      <div className="segcaps">
+        <button className={sotto === "voci" ? "on" : ""} onClick={() => setSotto("voci")}>Costi & ricavi</button>
+        <button className={sotto === "ripartizione" ? "on" : ""} onClick={() => setSotto("ripartizione")}>Ripartizione</button>
+        <button className={sotto === "anagrafica" ? "on" : ""} onClick={() => setSotto("anagrafica")}>Controparti</button>
+        <button className={sotto === "enti" ? "on" : ""} onClick={() => setSotto("enti")}>Associazioni</button>
+        <div className="spacer" />
+        <button className="btn sm" onClick={esportaPdf}>PDF</button>
+        <button className="btn ghost sm" onClick={esportaExcel}>Excel</button>
+      </div>
+
+      {sotto === "voci" && (
+        <div className="panel">
+          <div className="filtri">
+            {[["tutte", "Tutte"], ["ricavo", "Ricavi"], ["costo", "Costi"], ["prelievo", "Prelievi"], ["fondo", "Fondo cassa"], ["daconsuntivare", "Da consuntivare"]].map(([k, l]) => (
+              <button key={k} className={"chip" + (filtro === k ? " on" : "")} onClick={() => setFiltro(k)}>{l}</button>
+            ))}
+            <select value={filtroEnte} onChange={e => setFiltroEnte(e.target.value)} style={{ width: 190 }}>
+              <option value="">Tutte le associazioni</option>
+              {enti.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
+            </select>
+          </div>
+          <div className="row" style={{ marginBottom: 10 }}>
+            <button className="btn sm" onClick={() => setModaleVoce({})}>+ Voce</button>
+          </div>
+          {listaVoci.length === 0 && <p className="hint">Nessuna voce. Aggiungine una con "+ Voce".</p>}
+          {listaVoci.length > 0 && (
+            <table className="tab-cards">
+              <thead><tr><th>Voce</th><th>Associazione</th><th>Controparte</th><th>Preventivo</th><th>Consuntivo</th></tr></thead>
+              <tbody>
+                {listaVoci.map(v => {
+                  const q = quotaAssoc(v);
+                  return (
+                    <tr key={v.id} className="fin-riga" onClick={() => setModaleVoce(v)}>
+                      <td data-label="Voce">
+                        <span className={"tag " + (v.tipo || "costo")}>{tipoVoceLabel(v.tipo)}</span>
+                        <div className="fin-cat">{v.voce}</div>
+                        <div className="fin-sub">
+                          {v.data ? v.data + " · " : ""}
+                          {v.tipo === "ricavo" && q < 100 ? "alle associazioni " + q + "%" : ""}
+                          {v.tipo === "fondo" ? (fondoRestituito(v) ? "già restituito" : "da restituire" + (v.presso && v.presso !== v.ente ? " · in cassa a " + nomeEnte(v.presso) : "") + (fondoNegliIncassi(v) ? " · già nelle casse" : "")) : ""}
+                          {ricavoNegliIncassi(v) ? " · venduto già nelle casse" : ""}
+                          {v.ripartita === false && v.tipo !== "fondo" ? "non ripartita" : ""}
+                        </div>
+                      </td>
+                      <td data-label="Associazione">{v.ente ? nomeEnte(v.ente) : <span className="imp muted">da assegnare</span>}</td>
+                      <td data-label="Controparte">{nomeSoggetto(v.soggetto)}</td>
+                      <td data-label="Preventivo" className="num">{euro(v.preventivo)}</td>
+                      <td data-label="Consuntivo" className="num">
+                        {(v.consuntivo === null || v.consuntivo === undefined) ? <span className="imp muted">—</span> : euro(v.consuntivo)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {sotto === "ripartizione" && (
+        <div>
+          <div className="panel">
+            <h2>Come si chiude</h2>
+            <table className="tab-cards">
+              <tbody>
+                <tr><td data-label="Voce">Incasso lordo (casse e POS)</td><td className="num" data-label="Importo">{euro(R.ricaviLordi)}</td></tr>
+                {R.fondoIncassi > 0 && <tr><td data-label="Voce">Fondo cassa compreso negli incassi</td><td className="num imp neg" data-label="Importo">− {euro(R.fondoIncassi)}</td></tr>}
+                <tr><td data-label="Voce">Quota delle attività commerciali</td><td className="num imp neg" data-label="Importo">− {euro(R.girate)}</td></tr>
+                <tr><td data-label="Voce"><b>Incasso delle associazioni</b></td><td className="num imp pos" data-label="Importo"><b>{euro(R.incassoAssoc)}</b></td></tr>
+                {R.prelievi > 0 && <tr><td data-label="Voce">Merce tenuta dalle associazioni (prelievi)</td><td className="num" data-label="Importo">+ {euro(R.prelievi)}</td></tr>}
+                <tr><td data-label="Voce">Costi</td><td className="num imp neg" data-label="Importo">− {euro(R.costi)}</td></tr>
+                <tr><td data-label="Voce"><b>Risultato da ripartire</b></td><td className={"num imp " + (R.risultato >= 0 ? "pos" : "neg")} data-label="Importo"><b>{euro(R.risultato)}</b></td></tr>
+                {R.fondi > 0 && <tr><td data-label="Voce">Fondo cassa da restituire (fuori dal risultato)</td><td className="num" data-label="Importo">{euro(R.fondi)}</td></tr>}
+              </tbody>
+            </table>
+          </div>
+
+          {R.attivita.length > 0 && (
+            <div className="panel">
+              <h2>Attività commerciali: scorporo</h2>
+              <p className="hint">Quanto hanno venduto le attività, quanto va girato a loro e quanto resta alle associazioni.</p>
+              <table className="tab-cards">
+                <thead><tr><th>Attività</th><th>Venduto</th><th>Alle attività</th><th>Alle associazioni</th></tr></thead>
+                <tbody>
+                  {R.attivita.map(a => (
+                    <tr key={a.id || "nessuno"}>
+                      <td data-label="Attività"><b>{a.id ? nomeSoggetto(a.id) : "(senza controparte)"}</b></td>
+                      <td className="num" data-label="Venduto">{euro(a.venduto)}</td>
+                      <td className="num imp neg" data-label="Alle attività">{euro(a.aLoro)}</td>
+                      <td className="num imp pos" data-label="Alle associazioni">{euro(a.aNoi)}</td>
+                    </tr>
+                  ))}
+                  <tr>
+                    <td data-label="Attività"><b>Totale</b></td>
+                    <td className="num" data-label="Venduto"><b>{euro(R.attivita.reduce((t, a) => t + a.venduto, 0))}</b></td>
+                    <td className="num imp neg" data-label="Alle attività"><b>{euro(R.attivita.reduce((t, a) => t + a.aLoro, 0))}</b></td>
+                    <td className="num imp pos" data-label="Alle associazioni"><b>{euro(R.attivita.reduce((t, a) => t + a.aNoi, 0))}</b></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <div className="panel">
+            <h2>Chi ha in mano cosa</h2>
+            <p className="hint">Disponibile = quello che l'associazione ha in mano: incassato (fondo cassa compreso) + prelievi in natura − quanto deve girare alle attività − costi pagati (escluse le voci non ripartite).
+              Conguaglio = spettante + fondo cassa da restituire − disponibile: positivo si riceve, negativo si versa. La somma dei conguagli fa sempre zero.</p>
+            <table className="tab-cards">
+              <thead><tr><th>Associazione</th><th>Incassato</th><th>Prelievi</th><th>Da girare</th><th>Costi</th><th>Disponibile</th><th>Fondo cassa</th><th>Spettante</th><th>Conguaglio</th></tr></thead>
+              <tbody>
+                {R.enti.map(e => (
+                  <tr key={e.ente.id}>
+                    <td data-label="Associazione"><b>{e.ente.nome}</b><div className="fin-sub">quota {e.ente.quota}%{e.propri ? " · proprie " + euro(e.propri) : ""}</div></td>
+                    <td className="num" data-label="Incassato">{euro(e.incassi)}</td>
+                    <td className="num" data-label="Prelievi">{euro(e.prelievi)}</td>
+                    <td className="num" data-label="Da girare">{euro(e.daGirare)}</td>
+                    <td className="num" data-label="Costi">{euro(e.costi)}</td>
+                    <td className="num" data-label="Disponibile">{euro(e.disponibile)}</td>
+                    <td className="num" data-label="Fondo cassa">{euro(e.fondi)}</td>
+                    <td className="num" data-label="Spettante">{euro(e.spettante)}</td>
+                    <td className={"num imp " + (e.conguaglio >= 0 ? "pos" : "neg")} data-label="Conguaglio">{euro(e.conguaglio)}</td>
+                  </tr>
+                ))}
+                {R.enti.length === 0 && <tr><td colSpan="9" className="hint">Crea le associazioni nella scheda "Associazioni".</td></tr>}
+              </tbody>
+            </table>
+            {R.quotaTot !== 100 && R.enti.length > 0 && (
+              <p className="hint" style={{ color: "var(--rosso)", marginTop: 8 }}>Attenzione: le quote sommano {R.quotaTot}% invece di 100%.</p>
+            )}
+          </div>
+
+          <div className="panel">
+            <h2>Chi versa a chi</h2>
+            <p className="hint">Proposta con il minor numero di bonifici per chiudere i conti; i fondi cassa anticipati sono già compresi.</p>
+            {versamenti.length > 0 ? (
+              <table className="tab-cards">
+                <thead><tr><th>Chi versa</th><th>A chi</th><th>Importo</th></tr></thead>
+                <tbody>
+                  {versamenti.map((g, i) => (
+                    <tr key={i}>
+                      <td data-label="Chi versa"><b>{g.da}</b></td>
+                      <td data-label="A chi"><b>{g.a}</b></td>
+                      <td className="num imp" data-label="Importo"><b>{euro(g.importo)}</b></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : <p className="hint">Nessun versamento da fare: i conti sono già pari.</p>}
+            {R.senzaEnte > 0 && <p className="hint" style={{ color: "var(--rosso)", marginTop: 8 }}>
+              {R.senzaEnte === 1 ? "1 voce non è intestata" : R.senzaEnte + " voci non sono intestate"} a nessuna associazione: entrano nel risultato ma non nella cassa di nessuno, quindi i versamenti non quadrano finché non le assegni.</p>}
+          </div>
+
+          <div className="panel">
+            <h2>Controparti</h2>
+            <table className="tab-cards">
+              <thead><tr><th>Controparte</th><th>Incassato lordo</th><th>Da girare a loro</th><th>Costi verso di loro</th><th>Saldo</th></tr></thead>
+              <tbody>
+                {R.controparti.map(c => (
+                  <tr key={c.id || "nessuno"}>
+                    <td data-label="Controparte">{c.id ? nomeSoggetto(c.id) : "(senza controparte)"}</td>
+                    <td className="num" data-label="Incassato">{euro(c.incassato)}</td>
+                    <td className="num" data-label="Da girare">{euro(c.daGirare)}</td>
+                    <td className="num" data-label="Costi">{euro(c.costi)}</td>
+                    <td className={"num imp " + (c.id ? "neg" : "muted")} data-label="Saldo">{c.id ? euro(c.daGirare + c.costi) : "—"}</td>
+                  </tr>
+                ))}
+                {R.controparti.length === 0 && <tr><td colSpan="5" className="hint">Ancora nessun movimento.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {sotto === "anagrafica" && (
+        <div className="panel">
+          <p className="hint">Chi paghiamo o da chi incassiamo: fornitori (Centro Carni, Ghidoni, i DJ…) e attività commerciali come Ciccio o Il Varco.
+            Per le attività indica la percentuale dell'incasso che resta alle associazioni: viene proposta in automatico su ogni loro ricavo.</p>
+          {soggetti.length > 0 && (
+            <table className="tab-cards">
+              <thead><tr><th>Nome</th><th>Tipo</th><th>% alle assoc.</th><th>Contatto</th><th></th></tr></thead>
+              <tbody>
+                {soggetti.map(s => (
+                  <tr key={s.id}>
+                    <td data-label="Nome">
+                      <input value={s.nome} onChange={e => patchSoggetto(s.id, { nome: e.target.value })}
+                        onBlur={() => log("ha aggiornato l'anagrafica di " + s.nome)} /></td>
+                    <td data-label="Tipo">
+                      <select value={s.tipo} onChange={e => patchSoggetto(s.id, { tipo: e.target.value }, "ha aggiornato l'anagrafica di " + s.nome)}>
+                        {TIPI_SOGGETTO.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+                      </select></td>
+                    <td data-label="% alle assoc." className="num">
+                      {s.tipo === "attivita"
+                        ? <input type="number" min="0" max="100" step="0.5" value={s.retro === undefined ? 100 : s.retro}
+                          onChange={e => patchSoggetto(s.id, { retro: e.target.value === "" ? "" : parseFloat(e.target.value) })}
+                          onBlur={() => log("ha aggiornato la percentuale di " + s.nome)} />
+                        : <span className="imp muted">100%</span>}</td>
+                    <td data-label="Contatto">
+                      <input value={s.contatto || ""} placeholder="telefono, email…"
+                        onChange={e => patchSoggetto(s.id, { contatto: e.target.value })}
+                        onBlur={() => log("ha aggiornato l'anagrafica di " + s.nome)} /></td>
+                    <td><button className="btn ghost sm" onClick={() => eliminaSoggetto(s.id)}>Elimina</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          {soggetti.length === 0 && <p className="hint">Ancora nessuno in anagrafica.</p>}
+          <div className="row" style={{ marginTop: 12, alignItems: "flex-end", flexWrap: "wrap" }}>
+            <div className="field"><label>Nome</label>
+              <input value={nuovoSoggetto.nome} onChange={e => setNuovoSoggetto(p => ({ ...p, nome: e.target.value }))}
+                onKeyDown={e => e.key === "Enter" && aggiungiSoggetto()} placeholder="Es. Centro Carni" /></div>
+            <div className="field" style={{ maxWidth: 190 }}><label>Tipo</label>
+              <select value={nuovoSoggetto.tipo} onChange={e => setNuovoSoggetto(p => ({ ...p, tipo: e.target.value }))}>
+                {TIPI_SOGGETTO.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+              </select></div>
+            {nuovoSoggetto.tipo === "attivita" && (
+              <div className="field" style={{ maxWidth: 130 }}><label>% alle assoc.</label>
+                <input type="number" min="0" max="100" step="0.5" value={nuovoSoggetto.retro}
+                  onChange={e => setNuovoSoggetto(p => ({ ...p, retro: e.target.value }))} /></div>
+            )}
+            <div className="field"><label>Contatto</label>
+              <input value={nuovoSoggetto.contatto} onChange={e => setNuovoSoggetto(p => ({ ...p, contatto: e.target.value }))}
+                onKeyDown={e => e.key === "Enter" && aggiungiSoggetto()} placeholder="telefono, email…" /></div>
+            <button className="btn sm" onClick={aggiungiSoggetto}>Aggiungi</button>
+          </div>
+        </div>
+      )}
+
+      {sotto === "enti" && (
+        <div className="panel">
+          <p className="hint">Le associazioni che organizzano la festa. La quota è la fetta di risultato che spetta a ciascuna: deve fare 100%.</p>
+          <table className="tab-cards">
+            <thead><tr><th>Associazione</th><th>Quota %</th><th></th></tr></thead>
+            <tbody>
+              {enti.map(e => (
+                <tr key={e.id}>
+                  <td data-label="Associazione"><input value={e.nome} onChange={ev => patchEnte(e.id, { nome: ev.target.value })}
+                    onBlur={() => log("ha aggiornato l'associazione " + e.nome)} /></td>
+                  <td data-label="Quota %" className="num"><input type="number" min="0" max="100" step="0.01" value={e.quota}
+                    onChange={ev => patchEnte(e.id, { quota: ev.target.value === "" ? "" : parseFloat(ev.target.value) })}
+                    onBlur={() => log("ha aggiornato la quota di " + e.nome)} /></td>
+                  <td><button className="btn ghost sm" onClick={() => eliminaEnte(e.id)}>Elimina</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className={"hint" + (R.quotaTot === 100 ? "" : "")} style={{ marginTop: 8, color: R.quotaTot === 100 ? "var(--verde)" : "var(--rosso)" }}>
+            Totale quote: {R.quotaTot}%
+          </p>
+          <div className="row" style={{ marginTop: 12, alignItems: "flex-end" }}>
+            <div className="field"><label>Nuova associazione</label>
+              <input value={nuovoEnte} onChange={e => setNuovoEnte(e.target.value)} onKeyDown={e => e.key === "Enter" && aggiungiEnte()} placeholder="Es. Pro Loco" /></div>
+            <button className="btn sm" onClick={aggiungiEnte}>Aggiungi</button>
+            <button className="btn ghost sm" onClick={quoteParitarie}>Quote uguali</button>
+          </div>
+        </div>
+      )}
+
+      {modaleVoce && (
+        <ModaleVoce dati={modaleVoce} soggetti={soggetti} enti={enti}
+          onChiudi={() => setModaleVoce(null)} onSalva={salvaVoce} onElimina={eliminaVoce} />
+      )}
+    </div>
+  );
+}
+
+/* ---------- Modale voce costo/ricavo ---------- */
+function ModaleVoce({ dati, soggetti, enti, onSalva, onElimina, onChiudi }) {
+  const [f, setF] = useState(() => ({
+    tipo: "costo", voce: "", ente: "", presso: "", soggetto: "", preventivo: 0, consuntivo: "", quotaAssoc: 100, ripartita: true, restituito: false, incluso: false, statoFondo: "", data: "", note: "",
+    ...dati,
+    quotaAssoc: (dati && dati.quotaAssoc != null) ? dati.quotaAssoc : 100,
+    consuntivo: (dati && dati.consuntivo != null) ? dati.consuntivo : ""
+  }));
+  const [errore, setErrore] = useState("");
+  const set = (k, v) => { setErrore(""); setF(p => ({ ...p, [k]: v })); };
+  const scegliSoggetto = (id) => {
+    const s = soggetti.find(x => x.id === id);
+    setF(p => ({ ...p, soggetto: id, quotaAssoc: (s && s.tipo === "attivita" && s.retro !== undefined && s.retro !== "") ? s.retro : p.quotaAssoc }));
+  };
+  const imp = (f.consuntivo === "" || f.consuntivo === null || f.consuntivo === undefined) ? (parseFloat(f.preventivo) || 0) : (parseFloat(f.consuntivo) || 0);
+  const q = Math.min(100, Math.max(0, parseFloat(f.quotaAssoc) || 0));
+  return (
+    <div className="overlay" onClick={onChiudi}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <h3>{f.id ? "Modifica voce" : "Nuova voce"}</h3>
+        <div className="row">
+          <div className="field"><label>Tipo</label>
+            <select value={f.tipo} onChange={e => set("tipo", e.target.value)}>
+              {TIPI_VOCE.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+            </select></div>
+          <div className="field"><label>{f.tipo === "prelievo" ? "Chi se lo tiene" : f.tipo === "fondo" ? "Chi ha messo il fondo" : "Associazione"}</label>
+            <select value={f.ente} onChange={e => set("ente", e.target.value)}>
+              <option value="">— chi paga / incassa —</option>
+              {enti.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
+            </select></div>
+        </div>
+        {f.tipo === "prelievo" && (
+          <p className="hint" style={{ margin: "0 0 10px" }}>
+            Merce della cassa comune che resta a un'associazione (es. un cartone di patatine al Calcio).
+            Vale come un suo incasso: nel conguaglio pagherà agli altri la loro parte, tenendosi solo la sua.
+          </p>
+        )}
+        {f.tipo === "fondo" && (
+          <div>
+            <p className="hint" style={{ margin: "0 0 8px" }}>
+              Soldi anticipati per far partire le casse. Non sono né costo né ricavo: tornano a chi li ha messi prima di dividere il resto.
+            </p>
+            <div className="field"><label>Adesso quei soldi sono in mano a</label>
+              <select value={f.presso || f.ente || ""} onChange={e => set("presso", e.target.value)}>
+                <option value="">— chi li ha messi —</option>
+                {enti.map(e => <option key={e.id} value={e.id}>{e.nome}</option>)}
+              </select></div>
+            <label className="check" style={{ margin: "0 0 10px" }}>
+              <input type="checkbox" checked={!!f.restituito} onChange={e => set("restituito", e.target.checked)} />
+              Già restituito
+            </label>
+            <label className="check" style={{ margin: "0 0 10px" }}>
+              <input type="checkbox" checked={f.statoFondo === "incluso" || f.incluso === true}
+                onChange={e => setF(p => ({ ...p, statoFondo: e.target.checked ? "incluso" : "", incluso: e.target.checked }))} />
+              È già compreso negli incassi delle casse (contato insieme all'incasso)
+            </label>
+          </div>
+        )}
+        {f.tipo !== "fondo" && <div className="field"><label>Controparte</label>
+          <select value={f.soggetto} onChange={e => scegliSoggetto(e.target.value)}>
+            <option value="">—</option>
+            {soggetti.map(s => <option key={s.id} value={s.id}>{s.nome}</option>)}
+          </select></div>}
+        <div className="field"><label>Voce</label>
+          <input autoFocus value={f.voce || ""} onChange={e => set("voce", e.target.value)}
+            placeholder={f.tipo === "fondo" ? "Fondo cassa (se lasci vuoto)" : "Es. Carne, Service audio, Incasso bar…"} /></div>
+        <div className="row">
+          <div className="field"><label>{f.tipo === "fondo" || f.tipo === "prelievo" ? "Previsto (€)" : "Preventivo (€)"}</label>
+            <input type="number" step="0.01" min="0" value={f.preventivo} onChange={e => set("preventivo", e.target.value)} /></div>
+          <div className="field"><label>Consuntivo (€)</label>
+            <input type="number" step="0.01" min="0" value={f.consuntivo} onChange={e => set("consuntivo", e.target.value)} placeholder="non ancora" /></div>
+          <div className="field"><label>Data</label>
+            <input type="date" value={f.data || ""} onChange={e => set("data", e.target.value)} /></div>
+        </div>
+        {f.tipo === "ricavo" && (
+          <div className="field"><label>% dell'incasso che resta alle associazioni</label>
+            <input type="number" step="0.5" min="0" max="100" value={f.quotaAssoc} onChange={e => set("quotaAssoc", e.target.value)} />
+            <p className="hint">Su {euro(imp)} restano {euro(imp * q / 100)} alle associazioni e {euro(imp - imp * q / 100)} vanno girati alla controparte. Per gli incassi normali lascia 100.</p>
+            {q < 100 && (
+              <label className="check" style={{ margin: "6px 0 0" }}>
+                <input type="checkbox" checked={f.incluso === true} onChange={e => set("incluso", e.target.checked)} />
+                Venduto già compreso negli incassi delle casse (non lo sommo di nuovo, tolgo solo la quota dell'attività)
+              </label>
+            )}
+          </div>
+        )}
+        {f.tipo !== "fondo" && (
+          <label className="check" style={{ margin: "4px 0 10px" }}>
+            <input type="checkbox" checked={f.ripartita !== false} onChange={e => set("ripartita", e.target.checked)} />
+            Entra nella ripartizione fra le associazioni
+          </label>
+        )}
+        <div className="field"><label>Note</label>
+          <textarea value={f.note} onChange={e => set("note", e.target.value)} /></div>
+        <div className="row" style={{ marginTop: 12 }}>
+          <button className="btn" onClick={() => {
+            const nome = String(f.voce || "").trim() || (f.tipo === "fondo" ? "Fondo cassa" : "");
+            if (!nome) { setErrore("Scrivi il nome della voce prima di salvare."); return; }
+            if (f.tipo === "fondo" && !f.ente) { setErrore("Scegli chi ha messo il fondo cassa."); return; }
+            onSalva({
+              ...f, voce: nome,
+              preventivo: parseFloat(f.preventivo) || 0,
+              consuntivo: (f.consuntivo === "" || f.consuntivo === null || f.consuntivo === undefined) ? null : (parseFloat(f.consuntivo) || 0),
+              quotaAssoc: f.tipo === "ricavo" ? q : 100,
+              ripartita: f.ripartita !== false,
+              restituito: f.tipo === "fondo" ? !!f.restituito : false,
+              statoFondo: f.tipo === "fondo" ? (f.statoFondo === "incluso" || f.incluso === true ? "incluso" : "") : "",
+              incluso: f.tipo === "fondo" ? (f.statoFondo === "incluso" || f.incluso === true) : (f.tipo === "ricavo" && q < 100 ? f.incluso === true : false),
+              presso: f.tipo === "fondo" ? (f.presso || f.ente || "") : "",
+              creata: f.creata || Date.now()
+            });
+          }}>Salva</button>
+          <button className="btn ghost" onClick={onChiudi}>Annulla</button>
+        </div>
+        {errore && <p className="hint" style={{ color: "var(--rosso)", marginTop: 8 }}>{errore}</p>}
+        {f.id && <button className="btn danger block sm" style={{ marginTop: 8 }}
+          onClick={() => { if (confirm("Eliminare la voce \"" + f.voce + "\"?")) onElimina(f.id); }}>Elimina voce</button>}
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Sezioni riservate (solo admin) ---------- */
+function Permessi({ permessi, utenti, onSalva }) {
+  const staff = (utenti || []).filter(u => norm(u.nome) !== ADMIN_USER && u.ruolo !== "admin");
+  const set = (k, val, azione) => onSalva({ ...permessi, [k]: val }, azione);
+  return (
+    <div style={{ marginTop: 10 }}>
+      {SEZIONI.filter(s => !s.soloAdmin).map(s => {
+        const p = permessi[s.k] || { riservata: false, utenti: [] };
+        const aut = p.utenti || [];
+        return (
+          <div key={s.k} className="sez-perm">
+            <div className="sez-perm-top">
+              <b>{s.l}</b>
+              <label className="check">
+                <input type="checkbox" checked={!!p.riservata}
+                  onChange={e => set(s.k, { ...p, riservata: e.target.checked, utenti: aut },
+                    (e.target.checked ? "ha reso riservata la sezione " : "ha reso libera la sezione ") + s.l)} />
+                Riservata
+              </label>
+            </div>
+            {p.riservata && (
+              <div>
+                <p className="hint" style={{ marginTop: 6 }}>Oltre a te, possono entrare:</p>
+                <div className="persone">
+                  {staff.length === 0 && <span className="hint">Nessun utente staff ancora creato.</span>}
+                  {staff.map(u => {
+                    const on = aut.some(n => norm(n) === norm(u.nome));
+                    return (
+                      <button key={u.nome} className={"chip-perm" + (on ? " on" : "")}
+                        onClick={() => set(s.k,
+                          { ...p, utenti: on ? aut.filter(n => norm(n) !== norm(u.nome)) : [...aut, u.nome] },
+                          (on ? "ha tolto a " : "ha dato a ") + u.nome + " l'accesso a " + s.l)}>
+                        {u.nome}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ---------- Modale tavolo ---------- */
+function ModaleTavolo({ t, isAdmin, onSalva, onElimina, onVolanti, onGruppo, onChiudi }) {
+  const [f, setF] = useState({ ...t });
+  const [gr, setGr] = useState(t.gruppo || "");
+  return (
+    <div className="overlay" onClick={onChiudi}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <h3>Tavolo {etichetta(t)}{t.gruppo && t.gruppo !== t.nome ? " (" + t.nome + ")" : ""}</h3>
+        <p className="hint">{capienza(t)} posti{t.volanti ? " (" + t.posti + " + " + t.volanti + " volanti)" : ""}.</p>
+        {isAdmin && (
+          <div>
+            <div className="volanti-box">
+              <span className="hint">Posti volanti<br />sedie a capotavola</span>
+              <button className="btn ghost sm" onClick={() => onVolanti(-1)} disabled={!t.volanti}>−</button>
+              <b>{t.volanti || 0}</b>
+              <button className="btn ghost sm" onClick={() => onVolanti(1)} disabled={(t.volanti || 0) >= 4}>+</button>
+            </div>
+            <div className="tavolata-box">
+              <div className="field" style={{ marginBottom: 6 }}><label>Numero mostrato (tavolata)</label>
+                <div className="row">
+                  <input value={gr} onChange={e => setGr(e.target.value)} placeholder={t.nome} />
+                  <button className="btn ghost sm" style={{ flex: "0 0 auto" }} onClick={() => onGruppo(gr.trim())}>Applica</button>
+                </div></div>
+              <p className="hint">Dai lo stesso numero a più tavoli uniti: nella conta restano tavoli separati.
+                {t.gruppo ? " " : ""}{t.gruppo && <button className="btn ghost sm" style={{ marginTop: 6 }} onClick={() => { setGr(""); onGruppo(""); }}>Torna a {t.nome}</button>}</p>
+            </div>
+            <div className="row">
+              <div className="field"><label>Nome tavolo</label><input value={f.nome} onChange={e => setF({ ...f, nome: e.target.value })} /></div>
+              <div className="field"><label>Posti</label><input type="number" min="2" max="14" value={f.posti} onChange={e => setF({ ...f, posti: parseInt(e.target.value) || 8 })} /></div>
+            </div>
+            <div className="field"><label>Orientamento</label>
+              <select value={f.orient} onChange={e => setF({ ...f, orient: e.target.value })}>
+                <option value="h">Orizzontale</option><option value="v">Verticale</option>
+              </select></div>
+          </div>
+        )}
+        <div className="row" style={{ marginTop: 12 }}>
+          {isAdmin && <button className="btn" onClick={() => onSalva(f)}>Salva</button>}
+          <button className="btn ghost" onClick={onChiudi}>Chiudi</button>
+        </div>
+        {isAdmin && <button className="btn danger block sm" style={{ marginTop: 8 }}
+          onClick={() => { if (confirm("Rimuovere il tavolo " + t.nome + "?")) onElimina(t.id); }}>Rimuovi tavolo</button>}
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Modale elemento della sala (bar, palco, ingresso…) ---------- */
+function ModaleElemento({ dati, onSalva, onElimina, onChiudi }) {
+  const [f, setF] = useState({ ...dati });
+  const misura = (v, def) => Math.min(1500, Math.max(40, parseInt(v) || def));
+  return (
+    <div className="overlay" onClick={onChiudi}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <h3>{dati.id ? dati.nome : "Nuovo elemento"}</h3>
+        <div className="field"><label>Nome</label>
+          <input autoFocus value={f.nome} onChange={e => setF({ ...f, nome: e.target.value })} placeholder="es. Bar" /></div>
+        <div className="filtri">
+          {ELEMENTI_RAPIDI.map(n => (
+            <button key={n} className={"chip" + (f.nome === n ? " on" : "")} onClick={() => setF({ ...f, nome: n })}>{n}</button>
+          ))}
+        </div>
+        <div className="row">
+          <div className="field"><label>Larghezza</label><input type="number" min="40" max="1500" step="10" value={f.w} onChange={e => setF({ ...f, w: e.target.value })} /></div>
+          <div className="field"><label>Altezza</label><input type="number" min="40" max="1500" step="10" value={f.h} onChange={e => setF({ ...f, h: e.target.value })} /></div>
+        </div>
+        <div className="field"><label>Colore</label>
+          <div className="tavolozza">
+            {COLORI.map(c => (
+              <button key={c.id} className={"pastiglia" + (f.colore === c.id ? " on" : "")} style={{ background: c.bg }}
+                title={c.id} onClick={() => setF({ ...f, colore: c.id })} />
+            ))}
+          </div></div>
+        <div className="row" style={{ marginTop: 12 }}>
+          <button className="btn" disabled={!f.nome.trim()}
+            onClick={() => onSalva({ ...f, nome: f.nome.trim(), w: misura(f.w, 300), h: misura(f.h, 160) })}>Salva</button>
+          <button className="btn ghost" onClick={onChiudi}>Chiudi</button>
+        </div>
+        {dati.id && <button className="btn danger block sm" style={{ marginTop: 8 }}
+          onClick={() => { if (confirm("Rimuovere " + dati.nome + " dalla sala?")) onElimina(dati); }}>Rimuovi elemento</button>}
+      </div>
+    </div>
+  );
+}
+
+function Genera({ onGenera }) {
+  const [n, setN] = useState(26), [c, setC] = useState(5), [p, setP] = useState(8);
+  return (
+    <div>
+      <div className="row">
+        <div className="field"><label>N. tavoli</label><input type="number" min="1" max="60" value={n} onChange={e => setN(parseInt(e.target.value) || 1)} /></div>
+        <div className="field"><label>Per fila</label><input type="number" min="1" max="12" value={c} onChange={e => setC(parseInt(e.target.value) || 1)} /></div>
+        <div className="field"><label>Posti</label><input type="number" min="2" max="14" value={p} onChange={e => setP(parseInt(e.target.value) || 8)} /></div>
+      </div>
+      <p className="hint">Capienza risultante: <b className="num">{n * p}</b> posti totali.</p>
+      <button className="btn ghost sm" onClick={() => { if (confirm("Rigenerare la piantina?")) onGenera(n, c, p); }}>Rigenera piantina</button>
+    </div>
+  );
+}
+
+/* ---------- Accesso ---------- */
+function Login({ utenti, onEntra }) {
+  const [nome, setNome] = useState("");
+  const [pw, setPw] = useState("");
+  const [err, setErr] = useState("");
+
+  const prova = () => {
+    const n = norm(nome);
+    if (!n) return setErr("Scrivi il tuo nome utente.");
+    if (n === ADMIN_USER) {
+      if (pw !== ADMIN_PASS) return setErr("Password non corretta.");
+      return onEntra({ nome: "admin", ruolo: "admin" });
+    }
+    const u = utenti.find(x => norm(x.nome) === n);
+    if (!u) return setErr("Utente non riconosciuto. Fattelo creare dall'admin.");
+    if (norm(pw) !== norm(u.nome)) return setErr("La password è il tuo nome utente.");
+    onEntra({ nome: u.nome, ruolo: u.ruolo || "staff" });
+  };
+
+  return (
+    <div className="login">
+      <div className="login-card">
+        <h1 className="brand">Vigilia <span>di Natale</span><small>Sala e conti</small></h1>
+        <div className="field"><label>Nome utente</label>
+          <input autoFocus value={nome} onChange={e => { setNome(e.target.value); setErr(""); }}
+            onKeyDown={e => e.key === "Enter" && prova()} placeholder="es. gianluca" /></div>
+        <div className="field"><label>Password</label>
+          <input type="password" value={pw} onChange={e => { setPw(e.target.value); setErr(""); }}
+            onKeyDown={e => e.key === "Enter" && prova()} /></div>
+        <button className="btn block" style={{ marginTop: 8 }} onClick={prova}>Entra</button>
+        {err && <p className="login-err">{err}</p>}
+        <p className="hint" style={{ marginTop: 14 }}>La password è uguale al nome utente. Ogni modifica che fai resta firmata con il tuo nome.</p>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Gestione utenti (solo admin) ---------- */
+function Utenti({ utenti, onSalva }) {
+  const [nuovo, setNuovo] = useState("");
+  const [ruolo, setRuolo] = useState("staff");
+
+  const aggiungi = () => {
+    const n = nuovo.trim();
+    if (!n) return;
+    if (utenti.some(u => norm(u.nome) === norm(n)) || norm(n) === ADMIN_USER) return alert("Questo utente esiste già.");
+    onSalva([...utenti, { nome: n, ruolo }], "ha creato l'utente " + n + " (" + ruolo + ")");
+    setNuovo("");
+  };
+
+  return (
+    <div>
+      <table className="tab-cards">
+        <thead><tr><th>Utente</th><th>Password</th><th>Ruolo</th><th></th></tr></thead>
+        <tbody>
+          {utenti.map(u => (
+            <tr key={u.nome}>
+              <td data-label="Utente"><b>{u.nome}</b></td>
+              <td className="num" data-label="Password">{norm(u.nome) === ADMIN_USER ? ADMIN_PASS : norm(u.nome)}</td>
+              <td data-label="Ruolo">{u.ruolo === "admin" ? <span className="ruolo">admin</span> : "staff"}</td>
+              <td>
+                {norm(u.nome) !== ADMIN_USER && (
+                  <button className="btn ghost sm" onClick={() => {
+                    if (confirm("Rimuovere l'utente " + u.nome + "?"))
+                      onSalva(utenti.filter(x => norm(x.nome) !== norm(u.nome)), "ha rimosso l'utente " + u.nome);
+                  }}>Rimuovi</button>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div className="row" style={{ marginTop: 12, alignItems: "flex-end" }}>
+        <div className="field"><label>Nuovo utente</label>
+          <input value={nuovo} onChange={e => setNuovo(e.target.value)} onKeyDown={e => e.key === "Enter" && aggiungi()} placeholder="es. gianluca" /></div>
+        <div className="field" style={{ maxWidth: 120 }}><label>Ruolo</label>
+          <select value={ruolo} onChange={e => setRuolo(e.target.value)}>
+            <option value="staff">Staff</option><option value="admin">Admin</option>
+          </select></div>
+        <button className="btn sm" onClick={aggiungi}>Aggiungi</button>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
