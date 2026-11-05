@@ -517,11 +517,13 @@ const FIREBASE_CONFIG = {
   appId: "1:118390368654:web:13392c9a2df58f2467dcdf"
 };
 
-/* I dati stanno nello stesso progetto Firebase del Festival ma in raccolte proprie:
-   le due app non si toccano. Anche le chiavi locali sono diverse, perché
-   su github.io tutte le app dello stesso account condividono il browser. */
-const COL_IMPOSTAZIONI = "vigilia_impostazioni";
-const COL_ATTIVITA = "vigilia_attivita";
+/* I dati stanno nella raccolta "impostazioni" del progetto Firebase del Festival,
+   l'unica già aperta dalle regole, ma in documenti propri col prefisso "vigilia_":
+   il Festival non li legge e la Vigilia non legge né scrive quelli del Festival.
+   Anche le chiavi locali sono diverse, perché su github.io tutte le app
+   dello stesso account condividono il browser. */
+const COL_IMPOSTAZIONI = "impostazioni";
+const PREFISSO_DOC = "vigilia_";
 const LS_KEY = "vigilia_v1";
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
@@ -758,7 +760,7 @@ function useDati() {
   const stato = useRef({});
   stato.current = { utenti, attivita, mappa, sfondoMappa, finanze, permessi };
   const salvaLocale = (extra) => { stato.current = { ...stato.current, ...extra }; scriviLocale(stato.current); };
-  const imp = (nome) => db.collection(COL_IMPOSTAZIONI).doc(nome);
+  const imp = (nome) => db.collection(COL_IMPOSTAZIONI).doc(PREFISSO_DOC + nome);
   const segnala = useCallback((e) => {
     console.error(e);
     setErrore("Firebase non ha accettato l'operazione: " + (e && e.message ? e.message : e));
@@ -782,8 +784,10 @@ function useDati() {
         if (v && v.lista) setUtenti(v.lista);
         else if (!d.metadata.fromCache) imp("utenti").set({ lista: UTENTI_DEFAULT }).catch(segnala);
       }, segnala);
-      const u4 = db.collection(COL_ATTIVITA).orderBy("ts", "desc").limit(150)
-        .onSnapshot(s => setAttivita(s.docs.map(d => d.data())), segnala);
+      const u4 = imp("attivita").onSnapshot(d => {
+        const v = d.data();
+        setAttivita((v && v.lista) || []);
+      }, segnala);
       /* finanze: si considerano caricate solo quando arrivano dal server (o dalla cache se il documento c'è),
          così nessun salvataggio parte da uno stato vuoto e cancella le voci già inserite */
       const u5 = imp("finanze").onSnapshot({ includeMetadataChanges: true }, d => {
@@ -847,9 +851,9 @@ function useDati() {
 
   const log = useCallback((azione) => {
     const voce = { utente: UTENTE_CORRENTE ? UTENTE_CORRENTE.nome : "?", azione, ts: Date.now() };
-    if (db) { db.collection(COL_ATTIVITA).add(voce).catch(e => console.error(e)); return; }
-    const next = [voce, ...(stato.current.attivita || [])].slice(0, 200);
+    const next = [voce, ...(stato.current.attivita || [])].slice(0, db ? 150 : 200);
     setAttivita(next);
+    if (db) { imp("attivita").set({ lista: next }).catch(e => console.error(e)); return; }
     salvaLocale({ attivita: next });
   }, []);
 
