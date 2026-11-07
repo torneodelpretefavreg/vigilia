@@ -384,8 +384,33 @@
   .prop{display:flex;align-items:center;gap:10px;margin-bottom:8px}
   .prop label{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);min-width:64px}
   .prop input[type=range]{flex:1;padding:0}
+  .mappa-bar{flex-wrap:wrap;row-gap:8px}
+  .mappa-aggiungi{display:flex;gap:6px;flex-wrap:wrap}
+  .mappa-azioni{display:flex;gap:6px;align-items:center;flex:1 1 auto}
+  .mappa-azioni .sep{width:6px}
+  .zoom-val{min-width:44px;text-align:center}
+  .gira-tel{font-size:12px;margin:0 0 6px}
+  @media(orientation:landscape){.gira-tel{display:none}}
   @media(max-width:760px){
     .mappa-wrap{height:56vh}
+    /* telefono: una striscia scorrevole per aggiungere, sotto una riga fissa di comandi */
+    .plan-bar.mappa-bar{display:block;overflow:visible;margin-bottom:8px}
+    .mappa-aggiungi{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -10px 8px;padding:0 10px 2px;
+      -webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent)}
+    .mappa-aggiungi::-webkit-scrollbar{display:none}
+    .mappa-aggiungi .btn{flex:0 0 auto;padding:8px 12px;font-size:13px;white-space:nowrap;min-height:38px}
+    .mappa-azioni{gap:4px;flex-wrap:nowrap}
+    .mappa-azioni .btn{padding:8px 0;min-width:38px;min-height:38px;font-size:15px;justify-content:center}
+    .mappa-azioni .lbl{display:none}
+    .mappa-azioni .sep{width:2px}
+    .mappa-azioni .spacer{display:block;flex:1}
+    .zoom-val{min-width:38px;font-size:12px}
+    .split.due{grid-template-columns:minmax(0,1fr)!important}
+    .split.due .panel{padding:14px}
+    .azioni-forma .btn{flex:1 1 30%;min-height:40px}
+    .pastiglia{width:36px;height:36px}
+    .prop input[type=range]{min-height:32px}
+    .maniglia{width:28px;height:28px;right:-14px;bottom:-14px}
   }
   .bottom-nav{display:none}
   .segment{display:none}
@@ -1131,9 +1156,10 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
   /* --- Annulla: ogni salvataggio ricorda com'era la mappa prima --- */
   const ultimo = useRef(mappa.forme || []);
   const [storia, setStoria] = useState([]);
+  const [futuro, setFuturo] = useState([]);
   const salva = (next, ratio) => {
     const prima = ultimo.current;
-    if (JSON.stringify(prima) !== JSON.stringify(next)) setStoria(st => [...st, prima].slice(-50));
+    if (JSON.stringify(prima) !== JSON.stringify(next)) { setStoria(st => [...st, prima].slice(-50)); setFuturo([]); }
     ultimo.current = next;
     onSalva(next, ratio);
   };
@@ -1141,6 +1167,8 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
     if (!storia.length) return mostra("Niente da annullare");
     const prima = storia[storia.length - 1];
     setStoria(storia.slice(0, -1));
+    const ora = ultimo.current;
+    setFuturo(fu => [...fu, ora]);
     ultimo.current = prima;
     setF(prima); Fref.current = prima;
     if (sel && !prima.some(f => f.id === sel)) setSel(null);
@@ -1148,13 +1176,26 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
     log("ha annullato l'ultima modifica alla mappa dell'area");
     mostra("Modifica annullata");
   };
+  const ripeti = () => {
+    if (!futuro.length) return mostra("Niente da rifare");
+    const dopo = futuro[futuro.length - 1];
+    setFuturo(futuro.slice(0, -1));
+    const ora = ultimo.current;
+    setStoria(st => [...st, ora].slice(-50));
+    ultimo.current = dopo;
+    setF(dopo); Fref.current = dopo;
+    if (sel && !dopo.some(f => f.id === sel)) setSel(null);
+    onSalva(dopo);
+    log("ha rifatto una modifica alla mappa dell'area");
+    mostra("Modifica rifatta");
+  };
   useEffect(() => {
     if (!isAdmin) return;
     const k = (e) => {
-      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === "z" &&
-        !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement && document.activeElement.tagName)) {
-        e.preventDefault(); annulla();
-      }
+      if (!(e.ctrlKey || e.metaKey) || /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement && document.activeElement.tagName)) return;
+      const k2 = e.key.toLowerCase();
+      if (k2 === "z" && !e.shiftKey) { e.preventDefault(); annulla(); }
+      else if (k2 === "y" || (k2 === "z" && e.shiftKey)) { e.preventDefault(); ripeti(); }
     };
     window.addEventListener("keydown", k);
     return () => window.removeEventListener("keydown", k);
@@ -1426,9 +1467,9 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
 
   return (
     <div>
-      <div className="plan-bar no-print">
+      <div className="plan-bar mappa-bar no-print">
         {isAdmin && (
-          <div className="row" style={{ flex: "0 0 auto", gap: 6, flexWrap: "wrap" }}>
+          <div className="mappa-aggiungi">
             <button className="btn sm" onClick={() => aggiungi("etichetta")}>+ Etichetta</button>
             <button className="btn ghost sm" onClick={() => aggiungi("cerchio")}>+ Cerchio</button>
             <button className="btn ghost sm" onClick={() => aggiungi("zona")}>+ Zona</button>
@@ -1439,17 +1480,23 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
             <button className="btn ghost sm" onClick={() => aggiungi("transennaV")}>+ Transenna ↕</button>
           </div>
         )}
-        {isAdmin && <button className="btn ghost sm" onClick={annulla} disabled={!storia.length} title="Annulla l'ultima modifica (Ctrl+Z)">↶ Indietro</button>}
-        <button className="btn ghost sm" onClick={() => setZoom(z => Math.max(0.1, +(z - 0.05).toFixed(3)))}>−</button>
-        <span className="num" style={{ minWidth: 44, textAlign: "center" }}>{Math.round(zoom * 100)}%</span>
-        <button className="btn ghost sm" onClick={() => setZoom(z => Math.min(1.4, +(z + 0.05).toFixed(3)))}>+</button>
-        <button className="btn ghost sm" onClick={adatta}>Adatta</button>
-        <div className="spacer" />
-        <button className="btn sm" onClick={esportaPDF}>Esporta PDF</button>
-        <button className="btn ghost sm" onClick={esportaPNG}>PNG</button>
+        <div className="mappa-azioni">
+          {isAdmin && <button className="btn ghost sm" onClick={annulla} disabled={!storia.length} title="Annulla l'ultima modifica (Ctrl+Z)">↶<span className="lbl"> Indietro</span></button>}
+          {isAdmin && <button className="btn ghost sm" onClick={ripeti} disabled={!futuro.length} title="Rifai la modifica annullata (Ctrl+Y)"><span className="lbl">Avanti </span>↷</button>}
+          <span className="sep" />
+          <button className="btn ghost sm" onClick={() => setZoom(z => Math.max(0.1, +(z - 0.05).toFixed(3)))}>−</button>
+          <span className="num zoom-val">{Math.round(zoom * 100)}%</span>
+          <button className="btn ghost sm" onClick={() => setZoom(z => Math.min(1.4, +(z + 0.05).toFixed(3)))}>+</button>
+          <button className="btn ghost sm" onClick={adatta}>Adatta</button>
+          <div className="spacer" />
+          <button className="btn sm" onClick={esportaPDF}><span className="lbl">Esporta </span>PDF</button>
+          <button className="btn ghost sm" onClick={esportaPNG}>PNG</button>
+        </div>
       </div>
 
-      <div className="mappa-wrap" ref={wrapRef}>
+      {mobile && <p className="hint gira-tel">↻ Gira il telefono in orizzontale per vedere la sala più grande. Tocca + per ingrandire e trascina per scorrere.</p>}
+      <div className="mappa-wrap" ref={wrapRef}
+        style={mobile ? { height: Math.max(110, Math.min(Math.round(window.innerHeight * 0.62), Math.round(H * zoom) + 2)), minHeight: 0 } : undefined}>
         <div className="scaler" style={{ width: Math.round(MAPPA_W * zoom), height: Math.round(H * zoom) }}>
         <div className="mappa" ref={planRef}
           style={{ width: MAPPA_W, height: H, transform: "scale(" + zoom + ")" }}
@@ -1556,7 +1603,7 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
                       onPointerUp={() => salva(Fref.current)} />
                     <span className="num">{selezionata.font || 30}</span></div>
                 )}
-                <div className="row" style={{ marginTop: 10 }}>
+                <div className="row azioni-forma" style={{ marginTop: 10, flexWrap: "wrap" }}>
                   <button className="btn ghost sm" onClick={duplica}>Duplica</button>
                   <button className="btn ghost sm" onClick={() => { commit([...F.filter(f => f.id !== sel), selezionata]); }}>Porta avanti</button>
                   <button className="btn danger sm" onClick={elimina}>Elimina</button>
