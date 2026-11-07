@@ -375,6 +375,8 @@
   .forma .txt{white-space:pre-line;font-weight:800;letter-spacing:.02em;line-height:1.15;padding:0 8px;word-break:break-word}
   .forma.zona{align-items:flex-start;justify-content:flex-start}
   .forma.zona .txt{font-weight:700;padding:6px 10px}
+  .forma.quota{cursor:grab}
+  .forma .dim{position:absolute;right:8px;bottom:6px;font:600 15px "JetBrains Mono",monospace;opacity:.85;pointer-events:none}
   .maniglia{position:absolute;right:-9px;bottom:-9px;width:20px;height:20px;border-radius:50%;background:#fff;border:2px solid var(--ink);cursor:nwse-resize;touch-action:none}
   .tavolozza{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 10px}
   .pastiglia{width:30px;height:30px;border-radius:8px;border:2px solid transparent}
@@ -556,6 +558,11 @@ const PERMESSI_DEFAULT = { finanze: { riservata: true, utenti: [] } };
    ========================================================= */
 const MAPPA_W = 1600;
 const MAPPA_RATIO_DEF = 1735 / 725;  // salone 31,50 × 9,70 m, misure prese a mano
+/* Scala della cartina del salone: disegnata a 50 punti per metro su 1735 punti di larghezza */
+const PX_M = 50 * MAPPA_W / 1735;
+const metri = (px) => (px / PX_M).toFixed(2).replace(".", ",") + " m";
+const metriBrevi = (px) => (Math.round(px / PX_M * 10) / 10).toString().replace(".", ",");
+
 /* Le forme disegnate sulla vecchia cartina (piazza, 816×646) stavano su una mappa
    alta il doppio: con la cartina del salone, più bassa, quelle in basso finivano fuori.
    Si riportano dentro in proporzione, una volta sola. */
@@ -735,7 +742,8 @@ const FORME_NUOVE = {
   etichetta: { tipo: "etichetta", testo: "ETICHETTA", w: 260, h: 74, rot: 0, colore: "verde", font: 30 },
   cerchio: { tipo: "cerchio", testo: "T", w: 70, h: 70, rot: 0, colore: "bianco", font: 26 },
   zona: { tipo: "zona", testo: "Zona", w: 380, h: 240, rot: 0, colore: "marrone", font: 22 },
-  freccia: { tipo: "freccia", testo: "", w: 220, h: 60, rot: 0, colore: "rosso", font: 20 }
+  freccia: { tipo: "freccia", testo: "", w: 220, h: 60, rot: 0, colore: "rosso", font: 20 },
+  quota: { tipo: "quota", testo: "", w: 230, h: 50, rot: 0, colore: "nero", font: 20 }
 };
 
 /* ---------- Persistenza ---------- */
@@ -1031,6 +1039,32 @@ function App() {
   );
 }
 
+/* ---------- Misure in metri della forma selezionata ---------- */
+function Misure({ f, onCambia }) {
+  const m = (px) => String(Math.round(px / PX_M * 100) / 100).replace(".", ",");
+  const [w, setW] = useState(m(f.w));
+  const [h, setH] = useState(m(f.h));
+  useEffect(() => { setW(m(f.w)); setH(m(f.h)); }, [f.id, f.w, f.h]);
+  const applica = () => {
+    const nw = parseFloat(String(w).replace(",", ".")), nh = parseFloat(String(h).replace(",", "."));
+    const patch = {};
+    if (nw > 0) { const px = +(nw * PX_M).toFixed(2); patch.w = px; patch.x = Math.round(f.x + f.w / 2 - px / 2); }
+    if (f.tipo !== "quota" && nh > 0) { const px = +(nh * PX_M).toFixed(2); patch.h = px; patch.y = Math.round(f.y + f.h / 2 - px / 2); }
+    if ((patch.w && patch.w !== f.w) || (patch.h && patch.h !== f.h)) onCambia(patch);
+  };
+  const tasto = (e) => { if (e.key === "Enter") { e.target.blur(); } };
+  return (
+    <div className="row" style={{ marginBottom: 6 }}>
+      <div className="field"><label>{f.tipo === "quota" ? "Lunghezza (m)" : "Larghezza (m)"}</label>
+        <input inputMode="decimal" value={w} onChange={e => setW(e.target.value)} onBlur={applica} onKeyDown={tasto} /></div>
+      {f.tipo !== "quota" && (
+        <div className="field"><label>Altezza (m)</label>
+          <input inputMode="decimal" value={h} onChange={e => setH(e.target.value)} onBlur={applica} onKeyDown={tasto} /></div>
+      )}
+    </div>
+  );
+}
+
 /* ---------- Editor mappa dell'area ---------- */
 function spezzaTesto(ctx, testo, maxW) {
   const righe = [];
@@ -1123,10 +1157,10 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
 
   const selezionata = F.find(f => f.id === sel);
   const commit = (next) => { setF(next); salva(next); };
-  const aggiorna = (id, patch, salva) => {
+  const aggiorna = (id, patch, eSalva) => {
     const next = F.map(f => (f.id === id ? { ...f, ...patch } : f));
     setF(next);
-    if (salva) salva(next);
+    if (eSalva) salva(next);
   };
 
   const adatta = () => {
@@ -1135,7 +1169,7 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
   };
 
   const aggiungi = (tipo) => {
-    const base = FORME_NUOVE[tipo];
+    const base = tipo === "quota" ? { ...FORME_NUOVE.quota, w: +(5 * PX_M).toFixed(2) } : FORME_NUOVE[tipo];
     const f = { ...base, id: uid(), x: Math.round(MAPPA_W / 2 - base.w / 2), y: Math.round(H / 2 - base.h / 2) };
     commit([...F, f]);
     setSel(f.id);
@@ -1233,6 +1267,21 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
         const { righe, fs } = testoAdattato(ctx, f.testo, w - 24, h - 20, f.font || 22, "700");
         righe.forEach((r, i) => ctx.fillText(r, -w / 2 + 12, -h / 2 + 10 + i * fs * 1.2));
       }
+      ctx.font = "600 15px monospace"; ctx.textAlign = "right"; ctx.textBaseline = "bottom";
+      ctx.fillText(metriBrevi(w) + " × " + metriBrevi(h) + " m", w / 2 - 8, h / 2 - 6);
+    } else if (f.tipo === "quota") {
+      const t = 3, pt = 16;
+      ctx.strokeStyle = col.bg; ctx.fillStyle = col.bg; ctx.lineWidth = t;
+      ctx.beginPath(); ctx.moveTo(-w / 2 + pt, 0); ctx.lineTo(w / 2 - pt, 0); ctx.stroke();
+      [-1, 1].forEach(sx => {
+        ctx.beginPath(); ctx.moveTo(sx * w / 2, 0); ctx.lineTo(sx * (w / 2 - pt), -8); ctx.lineTo(sx * (w / 2 - pt), 8); ctx.closePath(); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(sx * w / 2, -h / 2 + 4); ctx.lineTo(sx * w / 2, h / 2 - 4); ctx.stroke();
+      });
+      const et = (f.testo ? f.testo + " · " : "") + metri(w);
+      ctx.font = "700 " + (f.font || 20) + "px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+      const tw = ctx.measureText(et).width;
+      ctx.fillStyle = "rgba(242,239,233,.9)"; ctx.fillRect(-tw / 2 - 6, -(f.font || 20) - 8, tw + 12, (f.font || 20) + 4);
+      ctx.fillStyle = col.bg; ctx.fillText(et, 0, -5);
     } else if (f.tipo === "freccia") {
       const p = Math.max(6, h * 0.18);
       ctx.strokeStyle = col.bg; ctx.fillStyle = col.bg; ctx.lineWidth = p; ctx.lineCap = "round";
@@ -1355,6 +1404,7 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
             <button className="btn ghost sm" onClick={() => aggiungi("cerchio")}>+ Cerchio</button>
             <button className="btn ghost sm" onClick={() => aggiungi("zona")}>+ Zona</button>
             <button className="btn ghost sm" onClick={() => aggiungi("freccia")}>+ Freccia</button>
+            <button className="btn ghost sm" onClick={() => aggiungi("quota")}>+ Quota</button>
           </div>
         )}
         {isAdmin && <button className="btn ghost sm" onClick={annulla} disabled={!storia.length} title="Annulla l'ultima modifica (Ctrl+Z)">↶ Indietro</button>}
@@ -1379,18 +1429,28 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
             const zona = f.tipo === "zona";
             return (
               <div key={f.id}
-                className={"forma" + (zona ? " zona" : "") + (sel === f.id ? " sel" : "")}
+                className={"forma" + (zona ? " zona" : "") + (f.tipo === "quota" ? " quota" : "") + (sel === f.id ? " sel" : "")}
                 style={{
                   left: f.x, top: f.y, width: f.w, height: f.h,
                   transform: "rotate(" + (f.rot || 0) + "deg)",
-                  background: f.tipo === "freccia" ? "transparent" : (zona ? col.bg + "59" : col.bg),
+                  background: f.tipo === "freccia" || f.tipo === "quota" ? "transparent" : (zona ? col.bg + "59" : col.bg),
                   border: zona ? "3px dashed " + col.bg : "none",
                   borderRadius: raggio(f),
                   color: zona ? col.bg : col.testo
                 }}
                 onPointerDown={e => giu(e, f, "move")}
                 onClick={e => { e.stopPropagation(); setSel(f.id); }}>
-                {f.tipo === "freccia" ? (
+                {f.tipo === "quota" ? (
+                  <svg width={f.w} height={f.h} style={{ overflow: "visible" }}>
+                    <line x1="16" y1={f.h / 2} x2={f.w - 16} y2={f.h / 2} stroke={col.bg} strokeWidth="3" />
+                    <path d={"M0 " + f.h / 2 + " L16 " + (f.h / 2 - 8) + " L16 " + (f.h / 2 + 8) + " Z"} fill={col.bg} />
+                    <path d={"M" + f.w + " " + f.h / 2 + " L" + (f.w - 16) + " " + (f.h / 2 - 8) + " L" + (f.w - 16) + " " + (f.h / 2 + 8) + " Z"} fill={col.bg} />
+                    <line x1="0" y1="4" x2="0" y2={f.h - 4} stroke={col.bg} strokeWidth="3" />
+                    <line x1={f.w} y1="4" x2={f.w} y2={f.h - 4} stroke={col.bg} strokeWidth="3" />
+                    <text x={f.w / 2} y={f.h / 2 - 7} textAnchor="middle" fontSize={f.font || 20} fontWeight="700" fill={col.bg}
+                      stroke="#F2EFE9" strokeWidth="5" paintOrder="stroke">{(f.testo ? f.testo + " · " : "") + metri(f.w)}</text>
+                  </svg>
+                ) : f.tipo === "freccia" ? (
                   <svg width="100%" height="100%" viewBox="0 0 100 40" preserveAspectRatio="none">
                     <path d="M0 20 H72" stroke={col.bg} strokeWidth="9" strokeLinecap="round" />
                     <path d="M100 20 L68 4 L68 36 Z" fill={col.bg} />
@@ -1398,6 +1458,7 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
                 ) : (
                   <span className="txt" style={{ fontSize: f.font || 30 }}>{f.testo}</span>
                 )}
+                {zona && <span className="dim">{metriBrevi(f.w) + " × " + metriBrevi(f.h) + " m"}</span>}
                 {isAdmin && sel === f.id && (
                   <span className="maniglia" onPointerDown={e => giu(e, f, "resize")} />
                 )}
@@ -1415,8 +1476,9 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
             {!selezionata && <p className="hint">Tocca una forma sulla mappa per modificarla, oppure aggiungine una dai pulsanti in alto.</p>}
             {selezionata && (
               <div>
+                <Misure f={selezionata} onCambia={(patch) => aggiorna(sel, patch, true)} />
                 {selezionata.tipo !== "freccia" && (
-                  <div className="field"><label>Testo</label>
+                  <div className="field"><label>{selezionata.tipo === "quota" ? "Nome (facoltativo, es. Bar)" : "Testo"}</label>
                     <input value={selezionata.testo}
                       onChange={e => aggiorna(sel, { testo: e.target.value })}
                       onBlur={() => salva(Fref.current)} /></div>
