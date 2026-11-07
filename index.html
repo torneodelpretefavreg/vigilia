@@ -1074,7 +1074,11 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
   const Fref = useRef(F);
   Fref.current = F;
 
-  useEffect(() => { if (!drag.current) setF(mappa.forme || []); }, [mappa]);
+  useEffect(() => {
+    if (drag.current) return;
+    setF(mappa.forme || []);
+    ultimo.current = mappa.forme || [];
+  }, [mappa]);
 
   // Adatta la mappa alla larghezza disponibile all'apertura e quando cambia la cartina
   useEffect(() => {
@@ -1085,12 +1089,44 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
     return () => clearTimeout(t);
   }, [mappa.ratio, sfondo]);
 
+  /* --- Annulla: ogni salvataggio ricorda com'era la mappa prima --- */
+  const ultimo = useRef(mappa.forme || []);
+  const [storia, setStoria] = useState([]);
+  const salva = (next, ratio) => {
+    const prima = ultimo.current;
+    if (JSON.stringify(prima) !== JSON.stringify(next)) setStoria(st => [...st, prima].slice(-50));
+    ultimo.current = next;
+    onSalva(next, ratio);
+  };
+  const annulla = () => {
+    if (!storia.length) return mostra("Niente da annullare");
+    const prima = storia[storia.length - 1];
+    setStoria(storia.slice(0, -1));
+    ultimo.current = prima;
+    setF(prima); Fref.current = prima;
+    if (sel && !prima.some(f => f.id === sel)) setSel(null);
+    onSalva(prima);
+    log("ha annullato l'ultima modifica alla mappa dell'area");
+    mostra("Modifica annullata");
+  };
+  useEffect(() => {
+    if (!isAdmin) return;
+    const k = (e) => {
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === "z" &&
+        !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement && document.activeElement.tagName)) {
+        e.preventDefault(); annulla();
+      }
+    };
+    window.addEventListener("keydown", k);
+    return () => window.removeEventListener("keydown", k);
+  });
+
   const selezionata = F.find(f => f.id === sel);
-  const commit = (next) => { setF(next); onSalva(next); };
+  const commit = (next) => { setF(next); salva(next); };
   const aggiorna = (id, patch, salva) => {
     const next = F.map(f => (f.id === id ? { ...f, ...patch } : f));
     setF(next);
-    if (salva) onSalva(next);
+    if (salva) salva(next);
   };
 
   const adatta = () => {
@@ -1141,7 +1177,7 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
     else aggiorna(d.id, { w: Math.max(30, Math.round(d.w + dx)), h: Math.max(30, Math.round(d.h + dy)) });
   };
   const su = () => {
-    if (drag.current && drag.current.mosso) onSalva(Fref.current);
+    if (drag.current && drag.current.mosso) salva(Fref.current);
     drag.current = null;
   };
 
@@ -1160,7 +1196,7 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
         while (url.length > 700000 && q > 0.3) { q -= 0.08; url = c.toDataURL("image/jpeg", q); }
         if (url.length > 900000) return mostra("Immagine troppo pesante: riducila e riprova");
         onSfondo(url);
-        onSalva(Fref.current, img.width / img.height);
+        salva(Fref.current, img.width / img.height);
         log("ha caricato la cartina dell'area");
         mostra("Cartina caricata");
       };
@@ -1321,6 +1357,7 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
             <button className="btn ghost sm" onClick={() => aggiungi("freccia")}>+ Freccia</button>
           </div>
         )}
+        {isAdmin && <button className="btn ghost sm" onClick={annulla} disabled={!storia.length} title="Annulla l'ultima modifica (Ctrl+Z)">↶ Indietro</button>}
         <button className="btn ghost sm" onClick={() => setZoom(z => Math.max(0.1, +(z - 0.05).toFixed(3)))}>−</button>
         <span className="num" style={{ minWidth: 44, textAlign: "center" }}>{Math.round(zoom * 100)}%</span>
         <button className="btn ghost sm" onClick={() => setZoom(z => Math.min(1.4, +(z + 0.05).toFixed(3)))}>+</button>
@@ -1382,7 +1419,7 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
                   <div className="field"><label>Testo</label>
                     <input value={selezionata.testo}
                       onChange={e => aggiorna(sel, { testo: e.target.value })}
-                      onBlur={() => onSalva(Fref.current)} /></div>
+                      onBlur={() => salva(Fref.current)} /></div>
                 )}
                 <div className="tavolozza">
                   {COLORI.map(c => (
@@ -1393,13 +1430,13 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
                 <div className="prop"><label>Rotazione</label>
                   <input type="range" min="0" max="345" step="15" value={selezionata.rot || 0}
                     onChange={e => aggiorna(sel, { rot: parseInt(e.target.value) })}
-                    onPointerUp={() => onSalva(Fref.current)} />
+                    onPointerUp={() => salva(Fref.current)} />
                   <span className="num">{selezionata.rot || 0}°</span></div>
                 {selezionata.tipo !== "freccia" && (
                   <div className="prop"><label>Testo px</label>
                     <input type="range" min="12" max="80" step="1" value={selezionata.font || 30}
                       onChange={e => aggiorna(sel, { font: parseInt(e.target.value) })}
-                      onPointerUp={() => onSalva(Fref.current)} />
+                      onPointerUp={() => salva(Fref.current)} />
                     <span className="num">{selezionata.font || 30}</span></div>
                 )}
                 <div className="row" style={{ marginTop: 10 }}>
