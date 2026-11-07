@@ -561,6 +561,9 @@ const MAPPA_RATIO_DEF = 1735 / 725;  // salone 31,50 × 9,70 m, misure prese a m
 /* Scala della cartina del salone: disegnata a 50 punti per metro su 1735 punti di larghezza */
 const PX_M = 50 * MAPPA_W / 1735;
 const metri = (px) => (px / PX_M).toFixed(2).replace(".", ",") + " m";
+/* transenna da cantiere/concerto: un modulo è lungo 2,5 m */
+const TRANSENNA_M = 2.5;
+const moduliTransenna = (px) => Math.max(1, Math.ceil(px / PX_M / TRANSENNA_M - 0.05));
 const metriBrevi = (px) => (Math.round(px / PX_M * 10) / 10).toString().replace(".", ",");
 
 /* Le forme disegnate sulla vecchia cartina (piazza, 816×646) stavano su una mappa
@@ -743,7 +746,8 @@ const FORME_NUOVE = {
   cerchio: { tipo: "cerchio", testo: "T", w: 70, h: 70, rot: 0, colore: "bianco", font: 26 },
   zona: { tipo: "zona", testo: "Zona", w: 380, h: 240, rot: 0, colore: "marrone", font: 22 },
   freccia: { tipo: "freccia", testo: "", w: 220, h: 60, rot: 0, colore: "rosso", font: 20 },
-  quota: { tipo: "quota", testo: "", w: 230, h: 50, rot: 0, colore: "nero", font: 20 }
+  quota: { tipo: "quota", testo: "", w: 230, h: 50, rot: 0, colore: "nero", font: 20 },
+  transenna: { tipo: "transenna", testo: "", w: 115, h: 26, rot: 0, colore: "nero", font: 16 }
 };
 
 /* ---------- Persistenza ---------- */
@@ -1045,19 +1049,20 @@ function Misure({ f, onCambia }) {
   const [w, setW] = useState(m(f.w));
   const [h, setH] = useState(m(f.h));
   useEffect(() => { setW(m(f.w)); setH(m(f.h)); }, [f.id, f.w, f.h]);
+  const lineare = f.tipo === "quota" || f.tipo === "transenna";
   const applica = () => {
     const nw = parseFloat(String(w).replace(",", ".")), nh = parseFloat(String(h).replace(",", "."));
     const patch = {};
     if (nw > 0) { const px = +(nw * PX_M).toFixed(2); patch.w = px; patch.x = Math.round(f.x + f.w / 2 - px / 2); }
-    if (f.tipo !== "quota" && nh > 0) { const px = +(nh * PX_M).toFixed(2); patch.h = px; patch.y = Math.round(f.y + f.h / 2 - px / 2); }
+    if (!lineare && nh > 0) { const px = +(nh * PX_M).toFixed(2); patch.h = px; patch.y = Math.round(f.y + f.h / 2 - px / 2); }
     if ((patch.w && patch.w !== f.w) || (patch.h && patch.h !== f.h)) onCambia(patch);
   };
   const tasto = (e) => { if (e.key === "Enter") { e.target.blur(); } };
   return (
     <div className="row" style={{ marginBottom: 6 }}>
-      <div className="field"><label>{f.tipo === "quota" ? "Lunghezza (m)" : "Larghezza (m)"}</label>
+      <div className="field"><label>{lineare ? "Lunghezza (m)" : "Larghezza (m)"}</label>
         <input inputMode="decimal" value={w} onChange={e => setW(e.target.value)} onBlur={applica} onKeyDown={tasto} /></div>
-      {f.tipo !== "quota" && (
+      {!lineare && (
         <div className="field"><label>Altezza (m)</label>
           <input inputMode="decimal" value={h} onChange={e => setH(e.target.value)} onBlur={applica} onKeyDown={tasto} /></div>
       )}
@@ -1170,6 +1175,7 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
 
   const aggiungi = (tipo) => {
     const base = tipo === "quota" ? { ...FORME_NUOVE.quota, w: +(5 * PX_M).toFixed(2) }
+      : tipo === "transenna" ? { ...FORME_NUOVE.transenna, w: +(TRANSENNA_M * PX_M).toFixed(2) }
       : tipo === "quotaV" ? { ...FORME_NUOVE.quota, w: +(3 * PX_M).toFixed(2), rot: 90 } : FORME_NUOVE[tipo];
     const f = { ...base, id: uid(), x: Math.round(MAPPA_W / 2 - base.w / 2), y: Math.round(H / 2 - base.h / 2) };
     commit([...F, f]);
@@ -1279,6 +1285,18 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
       }
       ctx.font = "600 15px monospace"; ctx.textAlign = "right"; ctx.textBaseline = "bottom";
       ctx.fillText(metriBrevi(w) + " × " + metriBrevi(h) + " m", w / 2 - 8, h / 2 - 6);
+    } else if (f.tipo === "transenna") {
+      const n = moduliTransenna(w), mw = w / n;
+      ctx.strokeStyle = col.bg; ctx.lineCap = "round";
+      ctx.lineWidth = 3; ctx.beginPath();
+      ctx.moveTo(-w / 2, -h / 2 + 3); ctx.lineTo(w / 2, -h / 2 + 3);
+      ctx.moveTo(-w / 2, h / 2 - 3); ctx.lineTo(w / 2, h / 2 - 3); ctx.stroke();
+      ctx.lineWidth = 1.5; ctx.beginPath();
+      for (let x = -w / 2 + 6; x < w / 2 - 3; x += 6) { ctx.moveTo(x, -h / 2 + 3); ctx.lineTo(x, h / 2 - 3); }
+      ctx.stroke();
+      ctx.lineWidth = 5; ctx.beginPath();
+      for (let i = 0; i <= n; i++) { const x = -w / 2 + i * mw; ctx.moveTo(x, -h / 2); ctx.lineTo(x, h / 2); }
+      ctx.stroke();
     } else if (f.tipo === "quota") {
       const t = 3, pt = 16;
       ctx.strokeStyle = col.bg; ctx.fillStyle = col.bg; ctx.lineWidth = t;
@@ -1416,6 +1434,7 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
             <button className="btn ghost sm" onClick={() => aggiungi("freccia")}>+ Freccia</button>
             <button className="btn ghost sm" onClick={() => aggiungi("quota")}>+ Quota ↔</button>
             <button className="btn ghost sm" onClick={() => aggiungi("quotaV")}>+ Quota ↕</button>
+            <button className="btn ghost sm" onClick={() => aggiungi("transenna")}>+ Transenna</button>
           </div>
         )}
         {isAdmin && <button className="btn ghost sm" onClick={annulla} disabled={!storia.length} title="Annulla l'ultima modifica (Ctrl+Z)">↶ Indietro</button>}
@@ -1444,14 +1463,25 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
                 style={{
                   left: f.x, top: f.y, width: f.w, height: f.h,
                   transform: "rotate(" + (f.rot || 0) + "deg)",
-                  background: f.tipo === "freccia" || f.tipo === "quota" ? "transparent" : (zona ? col.bg + "59" : col.bg),
+                  background: f.tipo === "freccia" || f.tipo === "quota" || f.tipo === "transenna" ? "transparent" : (zona ? col.bg + "59" : col.bg),
                   border: zona ? "3px dashed " + col.bg : "none",
                   borderRadius: raggio(f),
                   color: zona ? col.bg : col.testo
                 }}
                 onPointerDown={e => giu(e, f, "move")}
                 onClick={e => { e.stopPropagation(); setSel(f.id); }}>
-                {f.tipo === "quota" ? (
+                {f.tipo === "transenna" ? (() => {
+                  const n = moduliTransenna(f.w), mw = f.w / n, sb = [];
+                  for (let x = 6; x < f.w - 3; x += 6) sb.push(x);
+                  return (
+                    <svg width={f.w} height={f.h} style={{ overflow: "visible" }}>
+                      <line x1="0" y1="3" x2={f.w} y2="3" stroke={col.bg} strokeWidth="3" />
+                      <line x1="0" y1={f.h - 3} x2={f.w} y2={f.h - 3} stroke={col.bg} strokeWidth="3" />
+                      {sb.map(x => <line key={x} x1={x} y1="3" x2={x} y2={f.h - 3} stroke={col.bg} strokeWidth="1.5" />)}
+                      {Array.from({ length: n + 1 }, (_, i) => <line key={"p" + i} x1={i * mw} y1="0" x2={i * mw} y2={f.h} stroke={col.bg} strokeWidth="5" strokeLinecap="round" />)}
+                    </svg>
+                  );
+                })() : f.tipo === "quota" ? (
                   <svg width={f.w} height={f.h} style={{ overflow: "visible" }}>
                     <line x1="16" y1={f.h / 2} x2={f.w - 16} y2={f.h / 2} stroke={col.bg} strokeWidth="3" />
                     <path d={"M0 " + f.h / 2 + " L16 " + (f.h / 2 - 8) + " L16 " + (f.h / 2 + 8) + " Z"} fill={col.bg} />
@@ -1488,13 +1518,19 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
             {selezionata && (
               <div>
                 <Misure f={selezionata} onCambia={(patch) => aggiorna(sel, patch, true)} />
-                {selezionata.tipo === "quota" && (
+                {selezionata.tipo === "transenna" && (
+                  <p className="hint" style={{ marginBottom: 8 }}>
+                    {metri(selezionata.w)} · {moduliTransenna(selezionata.w)} {moduliTransenna(selezionata.w) === 1 ? "transenna" : "transenne"} da {String(TRANSENNA_M).replace(".", ",")} m
+                    <br />In tutto sulla mappa: <b>{F.filter(x => x.tipo === "transenna").reduce((t, x) => t + moduliTransenna(x.w), 0)}</b> transenne
+                  </p>
+                )}
+                {(selezionata.tipo === "quota" || selezionata.tipo === "transenna") && (
                   <div className="row" style={{ marginBottom: 8 }}>
                     <button className={"btn sm" + ((selezionata.rot || 0) % 180 === 0 ? "" : " ghost")} onClick={() => aggiorna(sel, { rot: 0 }, true)}>↔ Orizzontale</button>
                     <button className={"btn sm" + ((selezionata.rot || 0) === 90 ? "" : " ghost")} onClick={() => aggiorna(sel, { rot: 90 }, true)}>↕ Verticale</button>
                   </div>
                 )}
-                {selezionata.tipo !== "freccia" && (
+                {selezionata.tipo !== "freccia" && selezionata.tipo !== "transenna" && (
                   <div className="field"><label>{selezionata.tipo === "quota" ? "Nome (facoltativo, es. Bar)" : "Testo"}</label>
                     <input value={selezionata.testo}
                       onChange={e => aggiorna(sel, { testo: e.target.value })}
@@ -1511,7 +1547,7 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
                     onChange={e => aggiorna(sel, { rot: parseInt(e.target.value) })}
                     onPointerUp={() => salva(Fref.current)} />
                   <span className="num">{selezionata.rot || 0}°</span></div>
-                {selezionata.tipo !== "freccia" && (
+                {selezionata.tipo !== "freccia" && selezionata.tipo !== "transenna" && (
                   <div className="prop"><label>Testo px</label>
                     <input type="range" min="12" max="80" step="1" value={selezionata.font || 30}
                       onChange={e => aggiorna(sel, { font: parseInt(e.target.value) })}
@@ -1529,13 +1565,13 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
 
           <div className="panel no-print">
             <h2>Cartina di sfondo</h2>
-            <p className="hint">L'app parte con la mappa stilizzata della piazza: contorni di edifici, alberi, strade e monumento, senza foto. Puoi sostituirla con una tua immagine — viene ridotta e salvata nel database, così la vedono tutti i dispositivi.</p>
+            <p className="hint">L'app parte con la piantina del salone (31,50 × 9,70 m), in scala: quote e transenne misurano in metri. Puoi sostituirla con una tua immagine — viene ridotta e salvata nel database, così la vedono tutti i dispositivi.</p>
             <input type="file" accept="image/*" style={{ marginTop: 10 }}
               onChange={e => { caricaSfondo(e.target.files && e.target.files[0]); e.target.value = ""; }} />
             {sfondo && (
               <button className="btn ghost sm" style={{ marginTop: 10 }}
-                onClick={() => { if (confirm("Tornare alla mappa stilizzata della piazza?")) { onSfondo(""); log("ha ripristinato la cartina predefinita"); } }}>
-                Torna alla mappa stilizzata
+                onClick={() => { if (confirm("Tornare alla piantina del salone?")) { onSfondo(""); log("ha ripristinato la cartina predefinita"); } }}>
+                Torna alla piantina del salone
               </button>
             )}
             <p className="hint" style={{ marginTop: 12 }}>
