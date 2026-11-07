@@ -1176,6 +1176,7 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
   const aggiungi = (tipo) => {
     const base = tipo === "quota" ? { ...FORME_NUOVE.quota, w: +(5 * PX_M).toFixed(2) }
       : tipo === "transenna" ? { ...FORME_NUOVE.transenna, w: +(TRANSENNA_M * PX_M).toFixed(2) }
+      : tipo === "transennaV" ? { ...FORME_NUOVE.transenna, w: +(TRANSENNA_M * PX_M).toFixed(2), rot: 90 }
       : tipo === "quotaV" ? { ...FORME_NUOVE.quota, w: +(3 * PX_M).toFixed(2), rot: 90 } : FORME_NUOVE[tipo];
     const f = { ...base, id: uid(), x: Math.round(MAPPA_W / 2 - base.w / 2), y: Math.round(H / 2 - base.h / 2) };
     commit([...F, f]);
@@ -1434,7 +1435,8 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
             <button className="btn ghost sm" onClick={() => aggiungi("freccia")}>+ Freccia</button>
             <button className="btn ghost sm" onClick={() => aggiungi("quota")}>+ Quota ↔</button>
             <button className="btn ghost sm" onClick={() => aggiungi("quotaV")}>+ Quota ↕</button>
-            <button className="btn ghost sm" onClick={() => aggiungi("transenna")}>+ Transenna</button>
+            <button className="btn ghost sm" onClick={() => aggiungi("transenna")}>+ Transenna ↔</button>
+            <button className="btn ghost sm" onClick={() => aggiungi("transennaV")}>+ Transenna ↕</button>
           </div>
         )}
         {isAdmin && <button className="btn ghost sm" onClick={annulla} disabled={!storia.length} title="Annulla l'ultima modifica (Ctrl+Z)">↶ Indietro</button>}
