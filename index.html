@@ -881,9 +881,16 @@ function useDati() {
         if (v && v.sezioni) setPermessi(v.sezioni);
         else if (!d.metadata.fromCache) imp("permessi").set({ sezioni: PERMESSI_DEFAULT }).catch(segnala);
       }, segnala);
-      const u7 = imp("manodopera").onSnapshot(d => {
+      /* la prima volta la Manodopera parte da una copia di quella del Festival (solo lettura del suo documento) */
+      const u7 = imp("manodopera").onSnapshot({ includeMetadataChanges: true }, d => {
         const v = d.data();
         setManodopera({ aree: (v && v.aree) || [] });
+        if (!d.exists && !d.metadata.fromCache) {
+          db.collection(COL_IMPOSTAZIONI).doc("manodopera").get().then(f => {
+            const fv = f.data();
+            imp("manodopera").set({ aree: (fv && fv.aree) || [], copiataDalFestival: Date.now() }).catch(segnala);
+          }).catch(segnala);
+        }
       }, segnala);
       return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); };
     }
@@ -910,6 +917,15 @@ function useDati() {
     setSfondoMappa(img);
     if (db) return imp("mappaSfondo").set({ img }).catch(segnala);
     salvaLocale({ sfondoMappa: img });
+  }, []);
+
+  const copiaManodoperaFestival = useCallback(() => {
+    if (!db) return Promise.reject(new Error("Firebase non attivo"));
+    return db.collection(COL_IMPOSTAZIONI).doc("manodopera").get().then(f => {
+      const aree = ((f.data() || {}).aree) || [];
+      setManodopera({ aree });
+      return imp("manodopera").set({ aree, copiataDalFestival: Date.now() }).then(() => aree.length);
+    });
   }, []);
 
   const salvaManodopera = useCallback((aree) => {
@@ -949,7 +965,7 @@ function useDati() {
     salvaLocale({ attivita: next });
   }, []);
 
-  return { utenti, attivita, mappa, sfondoMappa, manodopera, salvaManodopera, finanze, finanzePronte, permessi, pronto, errore, cloud: !!db,
+  return { utenti, attivita, mappa, sfondoMappa, manodopera, salvaManodopera, copiaManodoperaFestival, finanze, finanzePronte, permessi, pronto, errore, cloud: !!db,
     salvaMappa, salvaSfondoMappa, salvaUtenti, salvaFinanze, salvaPermessi, log };
 }
 
@@ -1056,7 +1072,13 @@ function App() {
       {/* ---------- MANODOPERA ---------- */}
       {vistaOk === "manodopera" && (
         <ManodoperaView aree={D.manodopera.aree || []} isAdmin={isAdmin}
-          onSalva={(aree) => D.salvaManodopera(aree)} log={D.log} mostra={mostra} />
+          onSalva={(aree) => D.salvaManodopera(aree)} log={D.log} mostra={mostra}
+          onCopiaFestival={D.cloud ? () => {
+            if (!confirm("Ricopiare aree, mansioni e persone dalla Manodopera del Festival?\n\nQuello che c'è ora qui viene sostituito. Il Festival non viene toccato.")) return;
+            D.copiaManodoperaFestival()
+              .then(n => { D.log("ha ricopiato la manodopera dal Festival"); mostra(n + " aree copiate dal Festival"); })
+              .catch(e => alert("Copia non riuscita: " + (e && e.message ? e.message : e)));
+          } : null} />
       )}
 
       {/* ---------- COSTI & RICAVI ---------- */}
@@ -1676,7 +1698,7 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
 }
 
 /* ---------- Manodopera ---------- */
-function ManodoperaView({ aree, isAdmin, onSalva, log, mostra }) {
+function ManodoperaView({ aree, isAdmin, onSalva, log, mostra, onCopiaFestival }) {
   const [nuovaArea, setNuovaArea] = useState("");
   const [mostraFasce, setMostraFasce] = useState(true);
   const [turno, setTurno] = useState(() => {
@@ -2139,6 +2161,9 @@ function ManodoperaView({ aree, isAdmin, onSalva, log, mostra }) {
               onKeyDown={e => e.key === "Enter" && aggiungiArea()} placeholder="Es. Cucina, Casse, Bar spine…" />
             <button className="btn sm" onClick={aggiungiArea}>Aggiungi</button>
           </div>
+          {onCopiaFestival && (
+            <button className="btn ghost sm" style={{ marginTop: 10 }} onClick={onCopiaFestival}>Ricopia tutto dal Festival</button>
+          )}
         </div>
       )}
     </div>
