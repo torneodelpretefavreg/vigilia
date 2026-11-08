@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Vigilia di Natale — Area e conti</title>
+<title>Vigilia di Natale — Area, staff e conti</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -573,6 +573,7 @@ const quando = (ts) => ts ? new Date(ts).toLocaleString("it-IT", { day: "2-digit
    sempre e solo dell'admin: non sono delegabili.                */
 const SEZIONI = [
   { k: "mappa", l: "Area", nav: "Area" },
+  { k: "manodopera", l: "Manodopera", nav: "Staff" },
   { k: "finanze", l: "Costi & Ricavi", nav: "Costi" },
   { k: "impostazioni", l: "Impostazioni", nav: "Admin", soloAdmin: true }
 ];
@@ -619,6 +620,29 @@ const COLORI = [
   { id: "bianco", bg: "#F3EFE7", testo: "#1A1822" }
 ];
 const colore = (id) => COLORI.find(c => c.id === id) || COLORI[0];
+
+/* ---------- Manodopera: orari di presenza ----------
+   Ogni persona assegnata a una mansione vale { nome, dalle, alle }.
+   I vecchi elenchi fatti di soli nomi continuano a funzionare:
+   restano senza orario finche' non lo inserisci. */
+const LS_TURNO = "vigilia_turno";
+const ORA_OK = (s) => /^\d{1,2}:\d{2}$/.test(s || "");
+/* le ore piccole (prima delle 5) sono la notte dopo: 01:00 viene dopo le 23:00 */
+const minuti = (s) => {
+  if (!ORA_OK(s)) return null;
+  const p = String(s).split(":");
+  const v = parseInt(p[0], 10) * 60 + parseInt(p[1], 10);
+  return v < 300 ? v + 1440 : v;
+};
+const daMin = (v) => {
+  const x = ((v % 1440) + 1440) % 1440;
+  return String(Math.floor(x / 60)).padStart(2, "0") + ":" + String(x % 60).padStart(2, "0");
+};
+const personeDi = (m) => (m.persone || []).map(p => (typeof p === "string"
+  ? { nome: p, dalle: "", alle: "" }
+  : { nome: (p && p.nome) || "", dalle: (p && p.dalle) || "", alle: (p && p.alle) || "" }));
+const fasciaTxt = (p) => (p.dalle || p.alle) ? ((p.dalle || "\u2026") + "\u2013" + (p.alle || "\u2026")) : "";
+
 
 /* =========================================================
    3-bis) COSTI & RICAVI
@@ -802,6 +826,7 @@ function useDati() {
   const [attivita, setAttivita] = useState([]);
   const [mappa, setMappa] = useState({ forme: [], ratio: MAPPA_RATIO_DEF });
   const [sfondoMappa, setSfondoMappa] = useState("");
+  const [manodopera, setManodopera] = useState({ aree: [] });
   const [finanze, setFinanze] = useState({ voci: [], soggetti: [], enti: null });
   const [finanzePronte, setFinanzePronte] = useState(false);
   const [permessi, setPermessi] = useState(PERMESSI_DEFAULT);
@@ -810,7 +835,7 @@ function useDati() {
 
   /* lo stato più recente, letto dai salvataggi senza dipendere dall'ultimo render */
   const stato = useRef({});
-  stato.current = { utenti, attivita, mappa, sfondoMappa, finanze, permessi };
+  stato.current = { utenti, attivita, mappa, sfondoMappa, manodopera, finanze, permessi };
   const salvaLocale = (extra) => { stato.current = { ...stato.current, ...extra }; scriviLocale(stato.current); };
   const imp = (nome) => db.collection(COL_IMPOSTAZIONI).doc(PREFISSO_DOC + nome);
   const segnala = useCallback((e) => {
@@ -856,13 +881,18 @@ function useDati() {
         if (v && v.sezioni) setPermessi(v.sezioni);
         else if (!d.metadata.fromCache) imp("permessi").set({ sezioni: PERMESSI_DEFAULT }).catch(segnala);
       }, segnala);
-      return () => { u1(); u2(); u3(); u4(); u5(); u6(); };
+      const u7 = imp("manodopera").onSnapshot(d => {
+        const v = d.data();
+        setManodopera({ aree: (v && v.aree) || [] });
+      }, segnala);
+      return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); };
     }
     const l = leggiLocale();
     setUtenti(l.utenti && l.utenti.length ? l.utenti : UTENTI_DEFAULT);
     setAttivita(l.attivita || []);
     setMappa(adattaVecchiaMappa(l.mappa || { forme: [], ratio: MAPPA_RATIO_DEF }));
     setSfondoMappa(l.sfondoMappa || "");
+    setManodopera(l.manodopera || { aree: [] });
     setFinanze(l.finanze || { voci: [], soggetti: [], enti: null });
     setFinanzePronte(true);
     setPermessi(l.permessi || PERMESSI_DEFAULT);
@@ -880,6 +910,12 @@ function useDati() {
     setSfondoMappa(img);
     if (db) return imp("mappaSfondo").set({ img }).catch(segnala);
     salvaLocale({ sfondoMappa: img });
+  }, []);
+
+  const salvaManodopera = useCallback((aree) => {
+    setManodopera({ aree });
+    if (db) return imp("manodopera").set(JSON.parse(JSON.stringify({ aree }))).catch(segnala);
+    salvaLocale({ manodopera: { aree } });
   }, []);
 
   const salvaUtenti = useCallback((lista) => {
@@ -913,7 +949,7 @@ function useDati() {
     salvaLocale({ attivita: next });
   }, []);
 
-  return { utenti, attivita, mappa, sfondoMappa, finanze, finanzePronte, permessi, pronto, errore, cloud: !!db,
+  return { utenti, attivita, mappa, sfondoMappa, manodopera, salvaManodopera, finanze, finanzePronte, permessi, pronto, errore, cloud: !!db,
     salvaMappa, salvaSfondoMappa, salvaUtenti, salvaFinanze, salvaPermessi, log };
 }
 
@@ -981,7 +1017,7 @@ function App() {
       {/* ---------- Testata ---------- */}
       <header className="top no-print">
         <div className="top-row">
-          <h1 className="brand">Vigilia <span>di Natale</span><small>Area e conti</small></h1>
+          <h1 className="brand">Vigilia <span>di Natale</span><small>Area, staff e conti</small></h1>
           <div className="spacer" />
         </div>
         <div className="top-row" style={{ marginTop: 8 }}>
@@ -1015,6 +1051,12 @@ function App() {
             onSfondo={(img) => D.salvaSfondoMappa(img)}
             log={D.log} mostra={mostra} />
         </div>
+      )}
+
+      {/* ---------- MANODOPERA ---------- */}
+      {vistaOk === "manodopera" && (
+        <ManodoperaView aree={D.manodopera.aree || []} isAdmin={isAdmin}
+          onSalva={(aree) => D.salvaManodopera(aree)} log={D.log} mostra={mostra} />
       )}
 
       {/* ---------- COSTI & RICAVI ---------- */}
@@ -1632,6 +1674,477 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
     </div>
   );
 }
+
+/* ---------- Manodopera ---------- */
+function ManodoperaView({ aree, isAdmin, onSalva, log, mostra }) {
+  const [nuovaArea, setNuovaArea] = useState("");
+  const [mostraFasce, setMostraFasce] = useState(true);
+  const [turno, setTurno] = useState(() => {
+    try {
+      const v = JSON.parse(localStorage.getItem(LS_TURNO) || "null");
+      return v && typeof v === "object" ? { dalle: v.dalle || "", alle: v.alle || "" } : { dalle: "", alle: "" };
+    } catch (e) { return { dalle: "", alle: "" }; }
+  });
+  const setTurnoDef = (patch) => {
+    const t = { ...turno, ...patch };
+    setTurno(t);
+    try { localStorage.setItem(LS_TURNO, JSON.stringify(t)); } catch (e) { }
+  };
+
+  const conta = (m) => ({ rich: m.richiesti || 0, pres: personeDi(m).length });
+  const totArea = (a) => (a.mansioni || []).reduce((t, m) => {
+    const c = conta(m); return { rich: t.rich + c.rich, pres: t.pres + c.pres };
+  }, { rich: 0, pres: 0 });
+  const totale = aree.reduce((t, a) => {
+    const c = totArea(a); return { rich: t.rich + c.rich, pres: t.pres + c.pres };
+  }, { rich: 0, pres: 0 });
+
+  const salva = (next, azione) => { onSalva(next); if (azione) log(azione); };
+  const patchArea = (id, patch, azione) => salva(aree.map(a => (a.id === id ? { ...a, ...patch } : a)), azione);
+  const patchMans = (aid, mid, patch, azione) =>
+    patchArea(aid, { mansioni: (aree.find(a => a.id === aid).mansioni || []).map(m => (m.id === mid ? { ...m, ...patch } : m)) }, azione);
+
+  const aggiungiArea = () => {
+    const n = nuovaArea.trim(); if (!n) return;
+    const col = COLORI[aree.length % COLORI.length].id;
+    salva([...aree, { id: uid(), nome: n, colore: col, mansioni: [] }], "ha creato l'area " + n);
+    setNuovaArea(""); mostra("Area creata");
+  };
+
+  const aggiungiMansione = (a) =>
+    patchArea(a.id, { mansioni: [...(a.mansioni || []), { id: uid(), nome: "Nuova mansione", richiesti: 1, persone: [] }] },
+      "ha aggiunto una mansione in " + a.nome);
+
+  /* --- persone: sempre salvate come { nome, dalle, alle } --- */
+  const aggiungiPersona = (a, m, nome) => {
+    const n = (nome || "").trim(); if (!n) return;
+    const lista = personeDi(m);
+    const nuova = { nome: n, dalle: turno.dalle || "", alle: turno.alle || "" };
+    if (lista.some(p => p.nome.toLowerCase() === n.toLowerCase() && p.dalle === nuova.dalle && p.alle === nuova.alle))
+      return mostra(n + " è già in questa mansione con lo stesso orario");
+    const f = fasciaTxt(nuova);
+    patchMans(a.id, m.id, { persone: [...lista, nuova] },
+      "ha assegnato " + n + (f ? " (" + f + ")" : "") + " a " + m.nome + " · " + a.nome);
+  };
+
+  const togliPersona = (a, m, i) => {
+    const lista = personeDi(m);
+    const p = lista[i]; if (!p) return;
+    patchMans(a.id, m.id, { persone: lista.filter((x, j) => j !== i) },
+      "ha tolto " + p.nome + " da " + m.nome + " · " + a.nome);
+  };
+
+  const patchPersona = (a, m, i, patch, azione) =>
+    patchMans(a.id, m.id, { persone: personeDi(m).map((p, j) => (j === i ? { ...p, ...patch } : p)) }, azione);
+
+  /* riempie l'orario di chi non ce l'ha, con il turno predefinito */
+  const applicaTurno = (soloMans) => {
+    if (!ORA_OK(turno.dalle) || !ORA_OK(turno.alle)) return mostra("Imposta prima il turno predefinito qui sopra");
+    let tocchi = 0;
+    const next = aree.map(a => ({
+      ...a,
+      mansioni: (a.mansioni || []).map(m => {
+        if (soloMans && m.id !== soloMans.id) return m;
+        return {
+          ...m, persone: personeDi(m).map(p => {
+            if (ORA_OK(p.dalle) && ORA_OK(p.alle)) return p;
+            tocchi++; return { ...p, dalle: turno.dalle, alle: turno.alle };
+          })
+        };
+      })
+    }));
+    if (!tocchi) return mostra("Hanno già tutti un orario");
+    salva(next, "ha applicato il turno " + turno.dalle + "–" + turno.alle + " a " + tocchi + (tocchi === 1 ? " persona" : " persone"));
+    mostra("Orario applicato a " + tocchi + (tocchi === 1 ? " persona" : " persone"));
+  };
+
+  /* --- fasce orarie: chi è presente, dove e in che ruolo --- */
+  const piano = useMemo(() => {
+    const punti = new Set();
+    const senza = [];
+    aree.forEach(a => (a.mansioni || []).forEach(m => personeDi(m).forEach(p => {
+      const d = minuti(p.dalle), f = minuti(p.alle);
+      if (d === null || f === null || f <= d) senza.push({ area: a.nome, mans: m.nome, nome: p.nome });
+      else { punti.add(d); punti.add(f); }
+    })));
+    const ord = Array.from(punti).sort((x, y) => x - y);
+    const slot = [];
+    for (let i = 0; i < ord.length - 1; i++) {
+      const da = ord[i], al = ord[i + 1];
+      const gruppi = [];
+      let tot = 0, manca = 0;
+      aree.forEach(a => {
+        const mans = [];
+        (a.mansioni || []).forEach(m => {
+          const pres = personeDi(m).filter(p => {
+            const d = minuti(p.dalle), f = minuti(p.alle);
+            return d !== null && f !== null && d <= da && f >= al;
+          });
+          const rich = m.richiesti || 0;
+          if (pres.length || rich) {
+            mans.push({ m, pres, rich });
+            tot += pres.length;
+            manca += Math.max(0, rich - pres.length);
+          }
+        });
+        if (mans.length) gruppi.push({ area: a, mans });
+      });
+      slot.push({ da, al, gruppi, tot, manca });
+    }
+    return { slot, senza };
+  }, [aree]);
+
+  /* --- elenco per persona: il turno di ciascuno --- */
+  const perPersona = useMemo(() => {
+    const mappa = new Map();
+    aree.forEach(a => (a.mansioni || []).forEach(m => personeDi(m).forEach(p => {
+      const k = p.nome.trim().toLowerCase(); if (!k) return;
+      if (!mappa.has(k)) mappa.set(k, { nome: p.nome.trim(), turni: [] });
+      mappa.get(k).turni.push({ area: a.nome, mans: m.nome, dalle: p.dalle, alle: p.alle, ord: minuti(p.dalle) === null ? 99999 : minuti(p.dalle) });
+    })));
+    const l = Array.from(mappa.values());
+    l.forEach(x => x.turni.sort((u, v) => u.ord - v.ord));
+    return l.sort((x, y) => x.nome.localeCompare(y.nome, "it"));
+  }, [aree]);
+
+  /* --- PDF --- */
+  const esportaPDF = () => {
+    if (!window.jspdf || !window.jspdf.jsPDF) return mostra("Libreria PDF non disponibile");
+    const pdf = new window.jspdf.jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const PW = pdf.internal.pageSize.getWidth(), PH = pdf.internal.pageSize.getHeight();
+    const M = 14, X = [M, M + 100, M + 126, M + 152];
+    let y = M;
+
+    const nuovaPagina = () => { pdf.addPage(); y = M; };
+    const spazio = (h) => { if (y + h > PH - M) nuovaPagina(); };
+    const titolo = (t, sub) => {
+      pdf.setFont("helvetica", "bold"); pdf.setFontSize(17); pdf.setTextColor(20);
+      pdf.text(t, M, y); y += 7;
+      if (sub) {
+        pdf.setFont("helvetica", "normal"); pdf.setFontSize(9.5); pdf.setTextColor(110);
+        pdf.text(sub, M, y); y += 8;
+      } else y += 2;
+    };
+    const barra = (testo, destra, c) => {
+      const hex = c.bg.replace("#", "");
+      pdf.setFillColor(parseInt(hex.slice(0, 2), 16), parseInt(hex.slice(2, 4), 16), parseInt(hex.slice(4, 6), 16));
+      pdf.rect(M, y, PW - 2 * M, 9, "F");
+      pdf.setTextColor(c.testo === "#FFFFFF" ? 255 : 30);
+      pdf.setFont("helvetica", "bold"); pdf.setFontSize(11);
+      pdf.text(testo, M + 3, y + 6.2);
+      if (destra) pdf.text(destra, PW - M - 3, y + 6.2, { align: "right" });
+      y += 12;
+    };
+
+    /* ---- 1) organico per area e mansione ---- */
+    titolo("Vigilia di Natale — Manodopera",
+      "Fabbisogno " + totale.rich + " persone · assegnate " + totale.pres +
+      " · mancano " + Math.max(0, totale.rich - totale.pres) +
+      "    (aggiornato al " + new Date().toLocaleString("it-IT") + ")");
+
+    aree.forEach(a => {
+      const t = totArea(a), manca = Math.max(0, t.rich - t.pres);
+      spazio(22);
+      barra(a.nome.toUpperCase(), t.pres + "/" + t.rich + (manca ? "  —  mancano " + manca : "  —  completa"), colore(a.colore));
+
+      pdf.setTextColor(120); pdf.setFontSize(8);
+      pdf.text("MANSIONE", X[0], y);
+      pdf.text("RICH.", X[1], y); pdf.text("PRES.", X[2], y); pdf.text("MANCANO", X[3], y);
+      y += 2; pdf.setDrawColor(210); pdf.line(M, y, PW - M, y); y += 4.5;
+
+      (a.mansioni || []).forEach(m => {
+        const cc = conta(m), d = Math.max(0, cc.rich - cc.pres);
+        const lista = personeDi(m);
+        const persone = lista.length
+          ? lista.map(p => p.nome + (fasciaTxt(p) ? " (" + fasciaTxt(p) + ")" : " (orario da definire)")).join(", ")
+          : "—";
+        const righe = pdf.splitTextToSize(persone, PW - 2 * M - 4);
+        const h = 5.5 + righe.length * 4.2 + 3;
+        spazio(h);
+        pdf.setTextColor(30); pdf.setFont("helvetica", "bold"); pdf.setFontSize(9.5);
+        pdf.text(String(m.nome || ""), X[0], y);
+        pdf.setFont("helvetica", "normal"); pdf.setTextColor(30);
+        pdf.text(String(cc.rich), X[1] + 6, y, { align: "right" });
+        pdf.text(String(cc.pres), X[2] + 6, y, { align: "right" });
+        if (d > 0) pdf.setTextColor(200, 50, 60); else pdf.setTextColor(30, 150, 110);
+        pdf.setFont("helvetica", "bold");
+        pdf.text(d > 0 ? "-" + d : "ok", X[3] + 10, y, { align: "right" });
+        y += 4.6;
+        pdf.setFont("helvetica", "normal"); pdf.setFontSize(8.5); pdf.setTextColor(110);
+        righe.forEach(r => { pdf.text(r, X[0] + 2, y); y += 4.2; });
+        y += 2.5;
+        pdf.setDrawColor(235); pdf.line(M, y - 1.5, PW - M, y - 1.5);
+      });
+      y += 5;
+    });
+
+    if (aree.length === 0) { pdf.setTextColor(120); pdf.setFontSize(10); pdf.text("Nessuna area inserita.", M, y); }
+
+    /* ---- 2) chi c'è, fascia per fascia ---- */
+    if (piano.slot.length > 0) {
+      nuovaPagina();
+      titolo("Turni — chi è presente e dove",
+        "Ogni blocco è una fascia oraria: per ciascuna postazione trovi la mansione, quante persone servono e chi c'è.");
+
+      piano.slot.forEach(s => {
+        spazio(26);
+        barra(daMin(s.da) + "  –  " + daMin(s.al),
+          s.tot + " in servizio" + (s.manca ? "  —  mancano " + s.manca : ""),
+          { bg: "#141319", testo: "#FFFFFF" });
+
+        s.gruppi.forEach(g => {
+          spazio(12);
+          pdf.setFont("helvetica", "bold"); pdf.setFontSize(9.5);
+          const c = colore(g.area.colore), hex = c.bg.replace("#", "");
+          pdf.setTextColor(parseInt(hex.slice(0, 2), 16), parseInt(hex.slice(2, 4), 16), parseInt(hex.slice(4, 6), 16));
+          pdf.text(g.area.nome.toUpperCase(), M + 1, y); y += 4.4;
+
+          g.mans.forEach(x => {
+            const nomi = x.pres.map(p => p.nome).join(", ") || "nessuno";
+            const righe = pdf.splitTextToSize(nomi, PW - 2 * M - 56);
+            spazio(righe.length * 4.2 + 3);
+            pdf.setFont("helvetica", "bold"); pdf.setFontSize(9); pdf.setTextColor(40);
+            pdf.text(pdf.splitTextToSize(String(x.m.nome || ""), 43)[0] || "", M + 4, y);
+            if (x.pres.length < x.rich) pdf.setTextColor(200, 50, 60); else pdf.setTextColor(30, 150, 110);
+            pdf.text(x.pres.length + "/" + x.rich, M + 52, y, { align: "right" });
+            pdf.setFont("helvetica", "normal"); pdf.setFontSize(8.5); pdf.setTextColor(90);
+            righe.forEach((r, i) => { pdf.text(r, M + 56, y + i * 4.2); });
+            y += Math.max(4.6, righe.length * 4.2 + 0.6);
+          });
+          y += 2;
+        });
+        y += 4;
+      });
+
+      if (piano.senza.length > 0) {
+        spazio(16);
+        pdf.setFont("helvetica", "bold"); pdf.setFontSize(9.5); pdf.setTextColor(200, 50, 60);
+        pdf.text("Senza orario (non compaiono nelle fasce qui sopra)", M, y); y += 5;
+        pdf.setFont("helvetica", "normal"); pdf.setFontSize(8.5); pdf.setTextColor(90);
+        const txt = piano.senza.map(s => s.nome + " — " + s.mans + " · " + s.area).join(" ; ");
+        pdf.splitTextToSize(txt, PW - 2 * M).forEach(r => { spazio(5); pdf.text(r, M, y); y += 4.2; });
+      }
+    }
+
+    /* ---- 3) il turno di ogni persona ---- */
+    if (perPersona.length > 0) {
+      nuovaPagina();
+      titolo("Elenco per persona", "Per ognuno: orario, mansione e postazione. Utile da leggere al briefing.");
+      perPersona.forEach(p => {
+        spazio(6 + p.turni.length * 4.4);
+        pdf.setFont("helvetica", "bold"); pdf.setFontSize(9.5); pdf.setTextColor(30);
+        pdf.text(p.nome, M, y); y += 4.4;
+        pdf.setFont("helvetica", "normal"); pdf.setFontSize(8.5); pdf.setTextColor(100);
+        p.turni.forEach(t => {
+          pdf.text((fasciaTxt(t) || "orario da definire") + "   ·   " + t.mans + "   ·   " + t.area, M + 4, y);
+          y += 4.2;
+        });
+        y += 1.6;
+        pdf.setDrawColor(238); pdf.line(M, y - 1.2, PW - M, y - 1.2);
+      });
+    }
+
+    const n = pdf.internal.getNumberOfPages();
+    for (let i = 1; i <= n; i++) {
+      pdf.setPage(i); pdf.setFontSize(8); pdf.setTextColor(150);
+      pdf.text("Pagina " + i + " di " + n, PW - M, PH - 8, { align: "right" });
+    }
+    pdf.save("manodopera-vigilia.pdf");
+    log("ha esportato il piano manodopera in PDF");
+    mostra("PDF esportato");
+  };
+
+  return (
+    <div style={{ marginTop: 16 }}>
+      <div className="plan-bar no-print">
+        <div className="stats">
+          <div className="stat"><b className="num">{totale.rich}</b><i>richiesti</i></div>
+          <div className="stat ok"><b className="num">{totale.pres}</b><i>assegnati</i></div>
+          <div className={"stat " + (totale.rich - totale.pres > 0 ? "bad" : "ok")}>
+            <b className="num">{Math.max(0, totale.rich - totale.pres)}</b><i>mancano</i></div>
+          {piano.senza.length > 0 && (
+            <div className="stat bad"><b className="num">{piano.senza.length}</b><i>senza orario</i></div>
+          )}
+        </div>
+        <div className="spacer" />
+        <button className="btn sm" onClick={esportaPDF}>Esporta PDF</button>
+      </div>
+
+      {isAdmin && (
+        <div className="turno-bar no-print">
+          <span className="turno-lab">Turno predefinito</span>
+          <input type="time" className="orario-mini" value={turno.dalle} onChange={e => setTurnoDef({ dalle: e.target.value })} />
+          <span className="turno-sep">→</span>
+          <input type="time" className="orario-mini" value={turno.alle} onChange={e => setTurnoDef({ alle: e.target.value })} />
+          <button className="btn ghost sm" onClick={() => applicaTurno(null)}>Applica a chi non ha orario</button>
+          <span className="hint">Viene proposto in automatico a ogni nuova persona. Dopo mezzanotte usa 00:30, 01:00…</span>
+        </div>
+      )}
+
+      {aree.length === 0 && (
+        <p className="hint" style={{ margin: "10px 0 16px" }}>
+          Nessuna area ancora. Crea la prima qui sotto (Bar, Cucina, Casse, Consolle, Sicurezza…), poi dentro ogni area aggiungi le mansioni con quante persone servono.
+        </p>
+      )}
+
+      {aree.map(a => {
+        const t = totArea(a), manca = t.rich - t.pres;
+        const c = colore(a.colore);
+        return (
+          <div key={a.id} className="area-card">
+            <div className="area-top" style={{ borderLeftColor: c.bg }}>
+              {isAdmin
+                ? <input value={a.nome} style={{ flex: 1, background: "transparent", border: "none", fontWeight: 700, fontSize: 16, padding: 0 }}
+                    onChange={e => patchArea(a.id, { nome: e.target.value })}
+                    onBlur={() => log("ha rinominato un'area in " + a.nome)} />
+                : <h3>{a.nome}</h3>}
+              <span className={"copertura " + (manca > 0 ? "ko" : "ok")}>{t.pres}/{t.rich}{manca > 0 ? " · -" + manca : " ✓"}</span>
+              {isAdmin && (
+                <select value={a.colore} onChange={e => patchArea(a.id, { colore: e.target.value })} style={{ width: 110 }}>
+                  {COLORI.map(x => <option key={x.id} value={x.id}>{x.id}</option>)}
+                </select>
+              )}
+              {isAdmin && <button className="btn ghost sm" onClick={() => {
+                if (confirm("Eliminare l'area " + a.nome + " con tutte le mansioni?"))
+                  salva(aree.filter(x => x.id !== a.id), "ha eliminato l'area " + a.nome);
+              }}>×</button>}
+            </div>
+
+            {(a.mansioni || []).length > 0 && (
+              <div className="intestazione">
+                <span>Mansione</span><span>Rich.</span><span>Pres.</span><span>Mancano</span>
+              </div>
+            )}
+
+            {(a.mansioni || []).map(m => {
+              const cc = conta(m), d = cc.rich - cc.pres;
+              const lista = personeDi(m);
+              return (
+                <div key={m.id} className="mans">
+                  <div className="mans-riga">
+                    <input className="campo-largo" value={m.nome} disabled={!isAdmin}
+                      onChange={e => patchMans(a.id, m.id, { nome: e.target.value })}
+                      onBlur={() => log("ha aggiornato una mansione in " + a.nome)} />
+                    <input className="cifra" type="number" min="0" value={m.richiesti} disabled={!isAdmin}
+                      onChange={e => patchMans(a.id, m.id, { richiesti: parseInt(e.target.value) || 0 })} />
+                    <div className="cifra">{cc.pres}</div>
+                    <div className={"delta " + (d > 0 ? "ko" : "ok")}>{d > 0 ? "-" + d : (d < 0 ? "+" + (-d) : "ok")}</div>
+                  </div>
+
+                  <div className="persone-lista">
+                    {lista.map((p, i) => {
+                      const incompleto = !(ORA_OK(p.dalle) && ORA_OK(p.alle));
+                      return (
+                        <div key={i} className={"persona-riga" + (incompleto ? " senza-ora" : "")}>
+                          <span className="persona-nome" title={p.nome}>{p.nome}</span>
+                          <input type="time" className="orario-mini" value={p.dalle || ""} title="Dalle"
+                            onChange={e => patchPersona(a, m, i, { dalle: e.target.value })}
+                            onFocus={e => { e.target.dataset.ini = e.target.value; }}
+                            onBlur={e => { if (e.target.dataset.ini !== e.target.value) log("ha messo " + p.nome + " in turno " + (e.target.value || "—") + "–" + (p.alle || "—") + " · " + m.nome + " · " + a.nome); }} />
+                          <span className="turno-sep">→</span>
+                          <input type="time" className="orario-mini" value={p.alle || ""} title="Alle"
+                            onChange={e => patchPersona(a, m, i, { alle: e.target.value })}
+                            onFocus={e => { e.target.dataset.ini = e.target.value; }}
+                            onBlur={e => { if (e.target.dataset.ini !== e.target.value) log("ha messo " + p.nome + " in turno " + (p.dalle || "—") + "–" + (e.target.value || "—") + " · " + m.nome + " · " + a.nome); }} />
+                          <button className="togli" title="Togli" onClick={() => togliPersona(a, m, i)}>×</button>
+                        </div>
+                      );
+                    })}
+                    <div className="persona-riga aggiungi">
+                      <input className="add-persona" placeholder="+ persona"
+                        onKeyDown={e => { if (e.key === "Enter") { aggiungiPersona(a, m, e.target.value); e.target.value = ""; } }}
+                        onBlur={e => { if (e.target.value.trim()) { aggiungiPersona(a, m, e.target.value); e.target.value = ""; } }} />
+                      {(turno.dalle || turno.alle) && (
+                        <span className="hint">con orario {turno.dalle || "…"}–{turno.alle || "…"}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {isAdmin && (
+                    <div className="row" style={{ marginTop: 8, flexWrap: "wrap" }}>
+                      <button className="btn ghost sm" style={{ flex: "0 0 auto" }} onClick={() => applicaTurno(m)}>
+                        Orario a chi non ce l'ha
+                      </button>
+                      <button className="btn ghost sm" style={{ flex: "0 0 auto" }} onClick={() => {
+                        if (confirm("Eliminare la mansione " + m.nome + "?"))
+                          patchArea(a.id, { mansioni: a.mansioni.filter(x => x.id !== m.id) }, "ha eliminato la mansione " + m.nome);
+                      }}>Elimina mansione</button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {isAdmin && (
+              <div className="mans">
+                <button className="btn ghost sm" onClick={() => aggiungiMansione(a)}>+ Mansione</button>
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {(piano.slot.length > 0 || piano.senza.length > 0) && (
+        <div className="panel no-print" style={{ marginTop: 14 }}>
+          <div className="fasce-top">
+            <h2 style={{ margin: 0, flex: 1 }}>Chi c'è, fascia per fascia</h2>
+            <button className="btn ghost sm" onClick={() => setMostraFasce(v => !v)}>{mostraFasce ? "Nascondi" : "Mostra"}</button>
+          </div>
+
+          {mostraFasce && piano.senza.length > 0 && (
+            <p className="hint" style={{ marginBottom: 10 }}>
+              <b style={{ color: "var(--rosso)" }}>Senza orario:</b>{" "}
+              {piano.senza.map(s => s.nome + " (" + s.mans + ")").join(", ")} — non compaiono nelle fasce.
+            </p>
+          )}
+
+          {mostraFasce && piano.slot.map(s => (
+            <div key={s.da} className="fascia">
+              <div className="fascia-ora">
+                <b className="num">{daMin(s.da)} – {daMin(s.al)}</b>
+                <span className={s.manca ? "ko" : "ok"}>
+                  {s.tot} in servizio{s.manca ? " · mancano " + s.manca : " · copertura ok"}
+                </span>
+              </div>
+              {s.gruppi.map(g => (
+                <div key={g.area.id} className="fascia-area">
+                  <span className="fascia-pill" style={{ background: colore(g.area.colore).bg, color: colore(g.area.colore).testo }}>
+                    {g.area.nome}
+                  </span>
+                  <div className="fascia-mansioni">
+                    {g.mans.map(x => (
+                      <div key={x.m.id} className="fascia-mans">
+                        <span className="fascia-mans-nome">{x.m.nome}</span>
+                        <span className={"fascia-conta " + (x.pres.length < x.rich ? "ko" : "ok")}>{x.pres.length}/{x.rich}</span>
+                        <span className="fascia-nomi">{x.pres.map(p => p.nome).join(", ") || "nessuno"}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
+
+          {mostraFasce && piano.slot.length === 0 && (
+            <p className="hint">Inserisci gli orari delle persone per vedere qui la copertura fascia per fascia.</p>
+          )}
+        </div>
+      )}
+
+      {isAdmin && (
+        <div className="panel no-print">
+          <h2>Nuova area</h2>
+          <div className="row">
+            <input value={nuovaArea} onChange={e => setNuovaArea(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && aggiungiArea()} placeholder="Es. Cucina, Casse, Bar spine…" />
+            <button className="btn sm" onClick={aggiungiArea}>Aggiungi</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 /* =========================================================
    COSTI & RICAVI (budget, consuntivo, ripartizione) + Anagrafica
@@ -2475,7 +2988,7 @@ function Login({ utenti, onEntra }) {
   return (
     <div className="login">
       <div className="login-card">
-        <h1 className="brand">Vigilia <span>di Natale</span><small>Area e conti</small></h1>
+        <h1 className="brand">Vigilia <span>di Natale</span><small>Area, staff e conti</small></h1>
         <div className="field"><label>Nome utente</label>
           <input autoFocus value={nome} onChange={e => { setNome(e.target.value); setErr(""); }}
             onKeyDown={e => e.key === "Enter" && prova()} placeholder="es. gianluca" /></div>
