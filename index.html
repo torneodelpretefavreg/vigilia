@@ -390,6 +390,26 @@
   .mappa-azioni .sep{width:6px}
   .zoom-val{min-width:44px;text-align:center}
   .gira-tel{font-size:12px;margin:0 0 6px}
+  .bozze{max-width:820px}
+  .bozze-testa{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+  .bozze-testa h2,.bozza-testa h2{font-family:"Bricolage Grotesque",sans-serif;font-size:18px;margin:0 0 4px}
+  .bozze-lista{display:flex;flex-direction:column;gap:8px}
+  .bozza-riga{display:flex;flex-wrap:wrap;align-items:stretch;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:6px}
+  .bozza-riga.definitiva{border-color:var(--amber);box-shadow:0 0 0 1px var(--amber-soft)}
+  .bozza-apri{flex:1 1 0;min-width:0;display:grid;grid-template-columns:1fr auto;grid-template-areas:"n f" "i f";gap:2px 10px;text-align:left;padding:8px 10px;border-radius:8px;color:var(--text)}
+  .bozza-apri:hover{background:var(--surface-2)}
+  .bozza-nome{grid-area:n;font-weight:700;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .bozza-info{grid-area:i;font-size:12px;color:var(--muted)}
+  .bozza-freccia{grid-area:f;align-self:center;font-size:24px;color:var(--muted);line-height:1}
+  .stella{color:var(--amber);margin-right:6px}
+  .bozza-menu-btn{flex:0 0 auto;align-self:center;font-size:18px;min-width:40px}
+  .bozza-azioni{flex:1 1 100%;display:flex;flex-wrap:wrap;gap:6px;padding:6px 4px 2px;border-top:1px solid var(--line)}
+  .bozza-testa{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .bozza-testa h2{margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  @media(max-width:760px){
+    .bozze-testa .btn{width:100%}
+    .bozza-azioni .btn{flex:1 1 45%}
+  }
   .mappa-wrap.bloccata .forma{cursor:default;touch-action:auto}
   .mappa-wrap.in-modifica{outline:2px solid var(--amber);outline-offset:-2px}
   .modifica-toggle{flex:0 0 auto}
@@ -911,6 +931,11 @@ function useDati() {
   const [utenti, setUtenti] = useState(UTENTI_DEFAULT);
   const [attivita, setAttivita] = useState([]);
   const [mappa, setMappa] = useState({ forme: [], ratio: MAPPA_RATIO_DEF });
+  /* più bozze di mappa: un indice (nome, data, autore, definitiva) e un documento per ogni bozza.
+     La bozza "principale" è la mappa che c'era prima, nel suo documento di sempre. */
+  const [mappe, setMappe] = useState([]);
+  const [bozzaId, setBozzaId] = useState(null);
+  const [bozzaPronta, setBozzaPronta] = useState(null);
   const [sfondoMappa, setSfondoMappa] = useState("");
   const [manodopera, setManodopera] = useState({ aree: [] });
   const [finanze, setFinanze] = useState({ voci: [], soggetti: [], enti: null });
@@ -921,9 +946,10 @@ function useDati() {
 
   /* lo stato più recente, letto dai salvataggi senza dipendere dall'ultimo render */
   const stato = useRef({});
-  stato.current = { utenti, attivita, mappa, sfondoMappa, manodopera, finanze, permessi };
+  stato.current = { ...stato.current, utenti, attivita, mappa, mappe, bozzaId, sfondoMappa, manodopera, finanze, permessi };
   const salvaLocale = (extra) => { stato.current = { ...stato.current, ...extra }; scriviLocale(stato.current); };
   const imp = (nome) => db.collection(COL_IMPOSTAZIONI).doc(PREFISSO_DOC + nome);
+  const docBozza = (id) => imp(id === "principale" ? "mappa" : "mappa_" + id);
   const segnala = useCallback((e) => {
     console.error(e);
     setErrore("Firebase non ha accettato l'operazione: " + (e && e.message ? e.message : e));
@@ -933,14 +959,18 @@ function useDati() {
     if (db) {
       /* i valori di partenza si scrivono solo se il server conferma che il documento non c'è:
          una cache vuota non deve mai sovrascrivere i dati veri */
-      const u1 = imp("mappa").onSnapshot(d => {
+      const u1 = imp("mappe").onSnapshot({ includeMetadataChanges: true }, d => {
         const v = d.data();
-        if (v) {
-          const m = adattaVecchiaMappa({ forme: v.forme || [], ratio: v.ratio || MAPPA_RATIO_DEF });
-          setMappa(m);
-          if (m.adattata) imp("mappa").set({ forme: m.forme, ratio: m.ratio }).catch(segnala);
-        }
-        setPronto(true);
+        if (v && v.lista) { setMappe(v.lista); setPronto(true); return; }
+        if (d.metadata.fromCache) return;
+        /* prima volta: la mappa che c'era diventa la prima bozza */
+        imp("mappa").get().then(m => {
+          const mv = m.data();
+          const lista = [{ id: "principale", nome: "Bozza 1", creata: Date.now(), modificata: Date.now(), da: "",
+            n: ((mv && mv.forme) || []).length }];
+          setMappe(lista);
+          return imp("mappe").set({ lista });
+        }).catch(segnala).then(() => setPronto(true));
       }, e => { segnala(e); setPronto(true); });
       const u2 = imp("mappaSfondo").onSnapshot(d => {
         const v = d.data();
@@ -983,7 +1013,8 @@ function useDati() {
     const l = leggiLocale();
     setUtenti(l.utenti && l.utenti.length ? l.utenti : UTENTI_DEFAULT);
     setAttivita(l.attivita || []);
-    setMappa(adattaVecchiaMappa(l.mappa || { forme: [], ratio: MAPPA_RATIO_DEF }));
+    setMappe(l.mappe && l.mappe.length ? l.mappe
+      : [{ id: "principale", nome: "Bozza 1", creata: Date.now(), modificata: Date.now(), da: "", n: ((l.mappa && l.mappa.forme) || []).length }]);
     setSfondoMappa(l.sfondoMappa || "");
     setManodopera(l.manodopera || { aree: [] });
     setFinanze(l.finanze || { voci: [], soggetti: [], enti: null });
@@ -992,11 +1023,79 @@ function useDati() {
     setPronto(true);
   }, []);
 
+  /* --- bozza aperta: si ascolta solo il suo documento --- */
+  useEffect(() => {
+    setBozzaPronta(null);
+    if (!bozzaId) { setMappa({ forme: [], ratio: MAPPA_RATIO_DEF }); return; }
+    if (db) {
+      return docBozza(bozzaId).onSnapshot(d => {
+        const v = d.data();
+        const m = adattaVecchiaMappa({ forme: (v && v.forme) || [], ratio: (v && v.ratio) || MAPPA_RATIO_DEF });
+        setMappa({ forme: m.forme, ratio: m.ratio });
+        if (m.adattata && v) docBozza(bozzaId).set({ forme: m.forme, ratio: m.ratio }).catch(segnala);
+        setBozzaPronta(bozzaId);
+      }, segnala);
+    }
+    const l = leggiLocale();
+    const b = (l.bozze && l.bozze[bozzaId]) || (bozzaId === "principale" ? l.mappa : null) || { forme: [], ratio: MAPPA_RATIO_DEF };
+    setMappa(adattaVecchiaMappa(b));
+    setBozzaPronta(bozzaId);
+  }, [bozzaId]);
+
+  const scriviIndice = (lista) => {
+    setMappe(lista);
+    if (db) return imp("mappe").set({ lista: JSON.parse(JSON.stringify(lista)) }).catch(segnala);
+    salvaLocale({ mappe: lista });
+  };
+  const scriviBozza = (id, dati) => {
+    if (db) return docBozza(id).set(dati).catch(segnala);
+    const l = leggiLocale();
+    salvaLocale({ bozze: { ...(l.bozze || {}), [id]: dati } });
+  };
+  const chi = () => (UTENTE_CORRENTE ? UTENTE_CORRENTE.nome : "");
+
   const salvaMappa = useCallback((forme, ratio) => {
+    const id = stato.current.bozzaId; if (!id) return;
     const r = ratio || (stato.current.mappa.ratio || MAPPA_RATIO_DEF);
     setMappa({ forme, ratio: r });
-    if (db) return imp("mappa").set({ forme, ratio: r }).catch(segnala);
-    salvaLocale({ mappa: { forme, ratio: r } });
+    scriviBozza(id, { forme, ratio: r });
+    scriviIndice(stato.current.mappe.map(b => (b.id === id ? { ...b, modificata: Date.now(), da: chi(), n: forme.length } : b)));
+  }, []);
+
+  const apriBozza = useCallback((id) => setBozzaId(id), []);
+
+  /* nuova bozza vuota, oppure copia di una esistente */
+  const creaBozza = useCallback((nome, daId) => {
+    const id = uid();
+    const copia = () => {
+      if (!daId) return Promise.resolve({ forme: [], ratio: MAPPA_RATIO_DEF });
+      if (db) return docBozza(daId).get().then(d => {
+        const v = d.data() || {};
+        return { forme: v.forme || [], ratio: v.ratio || MAPPA_RATIO_DEF };
+      });
+      const l = leggiLocale();
+      return Promise.resolve((l.bozze && l.bozze[daId]) || (daId === "principale" ? l.mappa : null) || { forme: [], ratio: MAPPA_RATIO_DEF });
+    };
+    return copia().then(dati => {
+      scriviBozza(id, dati);
+      scriviIndice([...stato.current.mappe, { id, nome, creata: Date.now(), modificata: Date.now(), da: chi(), n: (dati.forme || []).length }]);
+      return id;
+    });
+  }, []);
+
+  const rinominaBozza = useCallback((id, nome) => {
+    scriviIndice(stato.current.mappe.map(b => (b.id === id ? { ...b, nome } : b)));
+  }, []);
+
+  const segnaDefinitiva = useCallback((id) => {
+    scriviIndice(stato.current.mappe.map(b => ({ ...b, definitiva: b.id === id ? !b.definitiva : false })));
+  }, []);
+
+  const eliminaBozza = useCallback((id) => {
+    scriviIndice(stato.current.mappe.filter(b => b.id !== id));
+    if (db) docBozza(id).delete().catch(segnala);
+    else { const l = leggiLocale(); const bz = { ...(l.bozze || {}) }; delete bz[id]; salvaLocale({ bozze: bz }); }
+    if (stato.current.bozzaId === id) setBozzaId(null);
   }, []);
 
   const salvaSfondoMappa = useCallback((img) => {
@@ -1043,6 +1142,7 @@ function useDati() {
   }, []);
 
   return { utenti, attivita, mappa, sfondoMappa, manodopera, salvaManodopera, finanze, finanzePronte, permessi, pronto, errore, cloud: !!db,
+    mappe, bozzaId, bozzaPronta, apriBozza, creaBozza, rinominaBozza, segnaDefinitiva, eliminaBozza,
     salvaMappa, salvaSfondoMappa, salvaUtenti, salvaFinanze, salvaPermessi, log };
 }
 
@@ -1129,7 +1229,8 @@ function App() {
         <div className="top-row" style={{ marginTop: 8 }}>
           <div className="tabs">
             {sezioniVisibili.map(s => (
-              <button key={s.k} className={"tab" + (vistaOk === s.k ? " on" : "")} onClick={() => setVista(s.k)}>{s.l}</button>
+              <button key={s.k} className={"tab" + (vistaOk === s.k ? " on" : "")}
+                onClick={() => { if (s.k === "mappa" && vistaOk === "mappa") D.apriBozza(null); setVista(s.k); }}>{s.l}</button>
             ))}
           </div>
           <div className="spacer" />
@@ -1152,10 +1253,32 @@ function App() {
       {/* ---------- AREA ---------- */}
       {vistaOk === "mappa" && (
         <div style={{ marginTop: 16 }}>
-          <MappaView mappa={D.mappa} sfondo={D.sfondoMappa} isAdmin={isAdmin} mobile={mobile}
-            onSalva={(forme, ratio) => D.salvaMappa(forme, ratio)}
-            onSfondo={(img) => D.salvaSfondoMappa(img)}
-            log={D.log} mostra={mostra} />
+          {!D.bozzaId || !D.mappe.some(b => b.id === D.bozzaId) ? (
+            <BozzeView mappe={D.mappe} isAdmin={isAdmin} onApri={D.apriBozza}
+              onNuova={(nome, daId) => D.creaBozza(nome, daId).then(id => {
+                D.log((daId ? "ha duplicato una bozza di mappa: " : "ha creato la bozza di mappa ") + nome);
+                mostra("Bozza " + nome + " creata"); return id;
+              })}
+              onRinomina={(b, nome) => { D.rinominaBozza(b.id, nome); D.log("ha rinominato la bozza " + b.nome + " in " + nome); mostra("Bozza rinominata"); }}
+              onDefinitiva={(b) => { D.segnaDefinitiva(b.id); D.log((b.definitiva ? "ha tolto la stella alla bozza " : "ha segnato come definitiva la bozza ") + b.nome); mostra(b.definitiva ? "Stella tolta" : b.nome + " è la definitiva"); }}
+              onElimina={(b) => { D.eliminaBozza(b.id); D.log("ha eliminato la bozza di mappa " + b.nome); mostra("Bozza eliminata"); }} />
+          ) : (() => {
+            const b = D.mappe.find(x => x.id === D.bozzaId);
+            return (
+              <div>
+                <div className="bozza-testa no-print">
+                  <button className="btn ghost sm" onClick={() => D.apriBozza(null)}>← Bozze</button>
+                  <h2>{b.definitiva && <span className="stella" title="Definitiva">★</span>}{b.nome}</h2>
+                </div>
+                {D.bozzaPronta !== D.bozzaId
+                  ? <p className="hint" style={{ padding: 20 }}>Carico la mappa…</p>
+                  : <MappaView key={D.bozzaId} nomeBozza={b.nome} mappa={D.mappa} sfondo={D.sfondoMappa} isAdmin={isAdmin} mobile={mobile}
+                      onSalva={(forme, ratio) => D.salvaMappa(forme, ratio)}
+                      onSfondo={(img) => D.salvaSfondoMappa(img)}
+                      log={(a) => D.log(a + " (" + b.nome + ")")} mostra={mostra} />}
+              </div>
+            );
+          })()}
         </div>
       )}
 
@@ -1207,7 +1330,8 @@ function App() {
       {/* ---------- Navigazione telefono ---------- */}
       <nav className="bottom-nav no-print">
         {sezioniVisibili.map(s => (
-          <button key={s.k} className={"nav-" + s.k + (vistaOk === s.k ? " on" : "")} onClick={() => setVista(s.k)}>
+          <button key={s.k} className={"nav-" + s.k + (vistaOk === s.k ? " on" : "")}
+            onClick={() => { if (s.k === "mappa" && vistaOk === "mappa") D.apriBozza(null); setVista(s.k); }}>
             <svg className="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{ICONE_NAV[s.k]}</svg>
             {s.nav}
           </button>
@@ -1215,6 +1339,67 @@ function App() {
       </nav>
 
       {toast && <div className="toast">{toast}</div>}
+    </div>
+  );
+}
+
+/* ---------- Elenco delle bozze di mappa ---------- */
+function BozzeView({ mappe, isAdmin, onApri, onNuova, onRinomina, onDefinitiva, onElimina }) {
+  const [menu, setMenu] = useState(null);
+  const ordinate = mappe.slice().sort((a, b) => (b.definitiva ? 1 : 0) - (a.definitiva ? 1 : 0) || (b.modificata || 0) - (a.modificata || 0));
+  const nomeLibero = (base) => {
+    const usati = new Set(mappe.map(b => norm(b.nome)));
+    if (!usati.has(norm(base))) return base;
+    let k = 2; while (usati.has(norm(base + " " + k))) k++;
+    return base + " " + k;
+  };
+  const nuova = (da) => {
+    const proposta = da ? nomeLibero(da.nome + " (copia)") : nomeLibero("Bozza " + (mappe.length + 1));
+    const nome = prompt(da ? "Nome della copia di " + da.nome + ":" : "Nome della nuova bozza:", proposta);
+    if (!nome || !nome.trim()) return;
+    setMenu(null);
+    onNuova(nome.trim(), da ? da.id : null).then(id => onApri(id));
+  };
+  return (
+    <div className="bozze">
+      <div className="bozze-testa">
+        <div>
+          <h2>Bozze della mappa</h2>
+          <p className="hint">Tocca una bozza per aprirla.{isAdmin ? " Prepara più disposizioni e segna con la stella quella scelta." : ""}</p>
+        </div>
+        {isAdmin && <button className="btn sm" onClick={() => nuova(null)}>+ Nuova bozza</button>}
+      </div>
+      {ordinate.length === 0 && <p className="hint" style={{ padding: "14px 2px" }}>Nessuna bozza.{isAdmin ? " Creane una con \"+ Nuova bozza\"." : ""}</p>}
+      <div className="bozze-lista">
+        {ordinate.map(b => (
+          <div key={b.id} className={"bozza-riga" + (b.definitiva ? " definitiva" : "")}>
+            <button className="bozza-apri" onClick={() => onApri(b.id)}>
+              <span className="bozza-nome">{b.definitiva && <span className="stella">★</span>}{b.nome}</span>
+              <span className="bozza-info">
+                {b.definitiva ? "Definitiva · " : ""}{b.n || 0} {(b.n || 0) === 1 ? "forma" : "forme"}
+                {b.modificata ? " · modificata il " + quando(b.modificata) + (b.da ? " da " + b.da : "") : ""}
+              </span>
+              <span className="bozza-freccia" aria-hidden="true">›</span>
+            </button>
+            {isAdmin && (
+              <button className="btn ghost sm bozza-menu-btn" title="Azioni" onClick={() => setMenu(menu === b.id ? null : b.id)}>⋯</button>
+            )}
+            {isAdmin && menu === b.id && (
+              <div className="bozza-azioni">
+                <button className="btn ghost sm" onClick={() => { setMenu(null); onDefinitiva(b); }}>{b.definitiva ? "☆ Togli stella" : "★ Segna definitiva"}</button>
+                <button className="btn ghost sm" onClick={() => nuova(b)}>Duplica</button>
+                <button className="btn ghost sm" onClick={() => {
+                  const n = prompt("Nuovo nome della bozza:", b.nome);
+                  if (n && n.trim() && n.trim() !== b.nome) { setMenu(null); onRinomina(b, n.trim()); }
+                }}>Rinomina</button>
+                <button className="btn danger sm" onClick={() => {
+                  if (confirm("Eliminare la bozza " + b.nome + "? Non si può annullare.")) { setMenu(null); onElimina(b); }
+                }}>Elimina</button>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -1277,7 +1462,8 @@ function testoAdattato(ctx, testo, maxW, maxH, fontIniziale, peso) {
 
 function raggio(f) { return f.tipo === "cerchio" ? Math.min(f.w, f.h) / 2 : (f.tipo === "zona" ? 10 : Math.min(f.h / 2, 20)); }
 
-function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mobile }) {
+function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mobile, nomeBozza }) {
+  const nomeFile = "mappa-vigilia" + (nomeBozza ? "-" + String(nomeBozza).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") : "");
   const sfondoAttivo = sfondo || SFONDO_DEFAULT;
   const H = Math.round(MAPPA_W / (sfondo ? (mappa.ratio || MAPPA_RATIO_DEF) : MAPPA_RATIO_DEF));
   const [F, setF] = useState(mappa.forme || []);
@@ -1578,7 +1764,7 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
     const c = await componiCanvas(scalaExport(3), true);
     const a = document.createElement("a");
     a.href = c.toDataURL("image/png");
-    a.download = "mappa-vigilia.png";
+    a.download = nomeFile + ".png";
     a.click();
     mostra("Immagine esportata");
   };
@@ -1624,8 +1810,8 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
     pdf.addImage(forme.toDataURL("image/png"), "PNG", X, Y, W, Hh, "forme", "FAST");
 
     pdf.setFont("helvetica", "normal"); pdf.setFontSize(7); pdf.setTextColor(150);
-    pdf.text("Vigilia di Natale — mappa dell'area · " + new Date().toLocaleDateString("it-IT"), m, ph - 3);
-    pdf.save("mappa-vigilia.pdf");
+    pdf.text("Vigilia di Natale — mappa dell'area" + (nomeBozza ? " · " + nomeBozza : "") + " · " + new Date().toLocaleDateString("it-IT"), m, ph - 3);
+    pdf.save(nomeFile + ".pdf");
     log("ha esportato la mappa dell'area in PDF");
     mostra("PDF esportato");
   };
