@@ -475,6 +475,76 @@
     .tab-cards td:first-child::before{content:none}
   }
 
+
+  /* =========================================================
+     Telefono: testata su una riga, numeri a griglia, Costi e Manodopera compatti
+     ========================================================= */
+  @media(max-width:760px){
+    /* testata: titolo a sinistra, stato / tema / utente a destra, tutto su una riga */
+    .top{display:flex;align-items:center;gap:8px;padding:10px 0 10px;border-bottom:1px solid var(--line)}
+    .top>.top-row{margin-top:0!important;flex-wrap:nowrap;gap:6px}
+    .top>.top-row:first-child{flex:1 1 auto;min-width:0}
+    .top>.top-row:first-child .spacer{display:none}
+    .top>.top-row:last-child{flex:0 0 auto}
+    .top>.top-row:last-child>.spacer{display:none}
+    .brand{font-size:19px;white-space:nowrap}
+    .cloud{font-size:0;gap:0}
+    .top .btn.sm{min-height:36px;min-width:36px;padding:6px 8px}
+    .utente-chip{gap:4px;padding:2px 3px 2px 10px;margin-left:0}
+    .utente-chip b{max-width:76px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+    .utente-chip .ruolo{display:none}
+    .utente-chip .btn.sm{min-height:32px;padding:4px 10px;font-size:12px}
+
+    /* menu in basso più sottile, con le icone */
+    .bottom-nav{padding:5px 6px calc(5px + env(safe-area-inset-bottom));gap:2px;
+      background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+    .bottom-nav button{padding:6px 2px 5px;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:1px}
+    .bottom-nav button::before{font-size:17px;line-height:1.1}
+    .bottom-nav button.nav-mappa::before{content:"▦"}
+    .bottom-nav button.nav-manodopera::before{content:"☺"}
+    .bottom-nav button.nav-finanze::before{content:"€"}
+    .bottom-nav button.nav-impostazioni::before{content:"⚙"}
+
+    /* numeri in alto (Costi, Manodopera): griglia a due colonne, niente scorrimento di lato */
+    .stats{display:grid;grid-template-columns:1fr 1fr;gap:6px;overflow:visible}
+    .stat{min-width:0;padding:7px 10px}
+    .stat b{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .stat i{font-size:9px}
+
+    /* Costi & Ricavi: schede a griglia, filtri compatti */
+    .segcaps{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+    .segcaps .spacer{display:none}
+    .segcaps button:not(.btn){min-height:40px;font-size:13px}
+    .segcaps .btn.sm{min-height:40px}
+    .filtri{gap:5px}
+    .filtri .chip{min-height:34px;padding:0 11px;font-size:12px}
+    .filtri select{width:100%!important;margin-top:2px}
+    .tab-cards tr{padding:10px 12px;margin-bottom:8px}
+    .tab-cards td{padding:3px 0;font-size:14px}
+    .tab-cards td:first-child{justify-content:flex-start;text-align:left;font-size:16px;font-weight:700;padding-bottom:6px}
+
+    /* Manodopera: turno predefinito ordinato, persone su due righe (nome / orario) */
+    .turno-bar{display:grid;grid-template-columns:1fr 16px 1fr;gap:6px 6px;align-items:center;padding:10px 12px}
+    .turno-bar .turno-lab{grid-column:1 / -1}
+    .turno-bar .orario-mini{width:100%}
+    .turno-bar .btn{grid-column:1 / -1}
+    .turno-bar .hint{grid-column:1 / -1;min-width:0;font-size:12px}
+    .area-top{gap:8px;padding:10px 10px 10px 12px}
+    .area-top select{width:88px!important;flex:0 0 auto;padding:8px 6px;font-size:14px}
+    .area-top .btn.sm{min-width:38px;min-height:38px;padding:6px}
+    .persona-riga{display:grid;grid-template-columns:minmax(0,1fr) 14px minmax(0,1fr) 34px;gap:4px 6px;padding:7px 6px 7px 11px}
+    .persona-riga .persona-nome{grid-column:1 / 4;grid-row:1;font-size:14px;font-weight:600}
+    .persona-riga .togli{grid-column:4;grid-row:1;font-size:20px;min-height:30px}
+    .persona-riga .orario-mini{width:100%;grid-row:2}
+    .persona-riga .turno-sep{grid-row:2;text-align:center}
+    .persona-riga.aggiungi{display:flex}
+    /* intestazione delle colonne numeriche, sopra la prima mansione di ogni area */
+    .area-card .intestazione{display:grid!important;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:10px;padding-bottom:0;text-align:center}
+    .area-card .intestazione>span:first-child{display:none}
+    /* moduli: al massimo due campi per riga */
+    .modal .row{flex-wrap:wrap}
+    .modal .row>.field{flex:1 1 40%;min-width:0}
+  }
   /* ---------- Telefono: sala ---------- */
   .split>*{min-width:0}
   .tav-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
@@ -961,6 +1031,19 @@ function useDati() {
 }
 
 /* ---------- Rilevamento schermo piccolo ---------- */
+/* telefono tenuto in verticale: la sala (lunga e stretta) si mostra girata di 90° */
+function useVerticale(bp = 760) {
+  const calc = () => window.innerWidth <= bp && window.innerHeight > window.innerWidth;
+  const [v, setV] = useState(calc);
+  useEffect(() => {
+    const f = () => setV(calc());
+    window.addEventListener("resize", f);
+    window.addEventListener("orientationchange", f);
+    return () => { window.removeEventListener("resize", f); window.removeEventListener("orientationchange", f); };
+  }, [bp]);
+  return v;
+}
+
 function useMobile(bp = 760) {
   const [m, setM] = useState(() => window.innerWidth <= bp);
   useEffect(() => {
@@ -1108,7 +1191,7 @@ function App() {
       {/* ---------- Navigazione telefono ---------- */}
       <nav className="bottom-nav no-print">
         {sezioniVisibili.map(s => (
-          <button key={s.k} className={vistaOk === s.k ? "on" : ""} onClick={() => setVista(s.k)}>{s.nav}</button>
+          <button key={s.k} className={"nav-" + s.k + (vistaOk === s.k ? " on" : "")} onClick={() => setVista(s.k)}>{s.nav}</button>
         ))}
       </nav>
 
@@ -1181,6 +1264,7 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
   const [F, setF] = useState(mappa.forme || []);
   const [sel, setSel] = useState(null);
   const [zoom, setZoom] = useState(() => (window.innerWidth <= 760 ? 0.24 : 0.55));
+  const vert = useVerticale();
   const wrapRef = useRef(null);
   const planRef = useRef(null);
   const drag = useRef(null);
@@ -1197,10 +1281,10 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
   useEffect(() => {
     const t = setTimeout(() => {
       const el = wrapRef.current;
-      if (el) setZoom(+Math.min((el.clientWidth - 18) / MAPPA_W, (el.clientHeight - 18) / H).toFixed(3));
+      if (el) setZoom(zoomAdatto(el));
     }, 60);
     return () => clearTimeout(t);
-  }, [mappa.ratio, sfondo]);
+  }, [mappa.ratio, sfondo, vert]);
 
   /* --- Annulla: ogni salvataggio ricorda com'era la mappa prima --- */
   const ultimo = useRef(mappa.forme || []);
@@ -1258,9 +1342,20 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
     if (eSalva) salva(next);
   };
 
+  /* in verticale la mappa riempie la larghezza e la pagina scorre in giù; altrimenti sta tutta nel riquadro */
+  function zoomAdatto(el) {
+    if (vert) return +((el.clientWidth - 4) / H).toFixed(3);
+    return +Math.min((el.clientWidth - 18) / MAPPA_W, (el.clientHeight - 18) / H).toFixed(3);
+  }
   const adatta = () => {
     const el = wrapRef.current; if (!el) return;
-    setZoom(+Math.min((el.clientWidth - 18) / MAPPA_W, (el.clientHeight - 18) / H).toFixed(3));
+    setZoom(zoomAdatto(el));
+  };
+  /* dal dito alle coordinate della mappa, anche quando è girata */
+  const punto = (e) => {
+    const r = planRef.current.getBoundingClientRect();
+    if (vert) return { x: (e.clientY - r.top) / zoom, y: H - (e.clientX - r.left) / zoom };
+    return { x: (e.clientX - r.left) / zoom, y: (e.clientY - r.top) / zoom };
   };
 
   const aggiungi = (tipo) => {
@@ -1290,10 +1385,10 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
   const giu = (e, f, modo) => {
     if (!isAdmin) return;
     e.preventDefault(); e.stopPropagation();
-    const r = planRef.current.getBoundingClientRect();
+    const pt = punto(e);
     drag.current = {
       id: f.id, modo,
-      px: (e.clientX - r.left) / zoom, py: (e.clientY - r.top) / zoom,
+      px: pt.x, py: pt.y,
       x: f.x, y: f.y, w: f.w, h: f.h, rot: f.rot || 0, mosso: false
     };
     setSel(f.id);
@@ -1301,9 +1396,8 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
   };
   const muovi = (e) => {
     const d = drag.current; if (!d) return;
-    const r = planRef.current.getBoundingClientRect();
-    const cx = (e.clientX - r.left) / zoom, cy = (e.clientY - r.top) / zoom;
-    const dx = cx - d.px, dy = cy - d.py;
+    const pt = punto(e);
+    const dx = pt.x - d.px, dy = pt.y - d.py;
     if (Math.abs(dx) > 2 || Math.abs(dy) > 2) d.mosso = true;
     if (d.modo === "move") aggiorna(d.id, { x: Math.round(d.x + dx), y: Math.round(d.y + dy) });
     else {
@@ -1543,12 +1637,15 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
         </div>
       </div>
 
-      {mobile && <p className="hint gira-tel">↻ Gira il telefono in orizzontale per vedere la sala più grande. Tocca + per ingrandire e trascina per scorrere.</p>}
-      <div className="mappa-wrap" ref={wrapRef}
-        style={mobile ? { height: Math.max(110, Math.min(Math.round(window.innerHeight * 0.62), Math.round(H * zoom) + 2)), minHeight: 0 } : undefined}>
-        <div className="scaler" style={{ width: Math.round(MAPPA_W * zoom), height: Math.round(H * zoom) }}>
+      {vert && <p className="hint gira-tel">Sul telefono la sala è girata in verticale: l'ingresso è in basso a sinistra. Gira il telefono per vederla per lungo.</p>}
+      <div className={"mappa-wrap" + (vert ? " verticale" : "")} ref={wrapRef}
+        style={vert ? { height: Math.round(MAPPA_W * zoom) + 4, minHeight: 0 }
+          : mobile ? { height: Math.max(110, Math.min(Math.round(window.innerHeight * 0.62), Math.round(H * zoom) + 2)), minHeight: 0 } : undefined}>
+        <div className="scaler" style={vert ? { width: Math.round(H * zoom), height: Math.round(MAPPA_W * zoom) }
+          : { width: Math.round(MAPPA_W * zoom), height: Math.round(H * zoom) }}>
         <div className="mappa" ref={planRef}
-          style={{ width: MAPPA_W, height: H, transform: "scale(" + zoom + ")" }}
+          style={{ width: MAPPA_W, height: H,
+            transform: vert ? "translateX(" + (H * zoom) + "px) rotate(90deg) scale(" + zoom + ")" : "scale(" + zoom + ")" }}
           onPointerMove={muovi} onPointerUp={su} onPointerCancel={su}
           onClick={() => { if (!drag.current) setSel(null); }}>
           <div className="mappa-bg" style={{ backgroundImage: "url(" + sfondoAttivo + ")" }} />
