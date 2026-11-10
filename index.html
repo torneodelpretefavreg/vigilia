@@ -390,6 +390,9 @@
   .mappa-azioni .sep{width:6px}
   .zoom-val{min-width:44px;text-align:center}
   .gira-tel{font-size:12px;margin:0 0 6px}
+  .mappa-wrap.bloccata .forma{cursor:default;touch-action:auto}
+  .mappa-wrap.in-modifica{outline:2px solid var(--amber);outline-offset:-2px}
+  .modifica-toggle{flex:0 0 auto}
   @media(orientation:landscape){.gira-tel{display:none}}
   @media(max-width:760px){
     .mappa-wrap{height:56vh}
@@ -400,6 +403,7 @@
     .mappa-aggiungi::-webkit-scrollbar{display:none}
     .mappa-aggiungi .btn{flex:0 0 auto;padding:8px 12px;font-size:13px;white-space:nowrap;min-height:38px}
     .mappa-azioni{gap:4px;flex-wrap:nowrap}
+    .modifica-toggle{display:flex;width:100%;justify-content:center;margin-bottom:8px;min-height:42px}
     .mappa-azioni .btn{padding:8px 0;min-width:38px;min-height:38px;font-size:15px;justify-content:center}
     .mappa-azioni .lbl{display:none}
     .mappa-azioni .sep{width:2px}
@@ -644,7 +648,7 @@ const quando = (ts) => ts ? new Date(ts).toLocaleString("it-IT", { day: "2-digit
 const SEZIONI = [
   { k: "mappa", l: "Area", nav: "Area" },
   { k: "manodopera", l: "Manodopera", nav: "Staff" },
-  { k: "finanze", l: "Costi & Ricavi", nav: "Costi" },
+  { k: "finanze", l: "Costi & Ricavi", nav: "Costi e ricavi" },
   { k: "impostazioni", l: "Impostazioni", nav: "Admin", soloAdmin: true }
 ];
 const PERMESSI_DEFAULT = { finanze: { riservata: true, utenti: [] } };
@@ -1263,6 +1267,9 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
   const H = Math.round(MAPPA_W / (sfondo ? (mappa.ratio || MAPPA_RATIO_DEF) : MAPPA_RATIO_DEF));
   const [F, setF] = useState(mappa.forme || []);
   const [sel, setSel] = useState(null);
+  /* la mappa si apre bloccata: si modifica solo dopo aver premuto "Modifica mappa" */
+  const [modifica, setModifica] = useState(false);
+  const puo = isAdmin && modifica;
   const [zoom, setZoom] = useState(() => (window.innerWidth <= 760 ? 0.24 : 0.55));
   const vert = useVerticale();
   const wrapRef = useRef(null);
@@ -1323,7 +1330,7 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
     mostra("Modifica rifatta");
   };
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!puo) return;
     const k = (e) => {
       if (!(e.ctrlKey || e.metaKey) || /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement && document.activeElement.tagName)) return;
       const k2 = e.key.toLowerCase();
@@ -1383,7 +1390,7 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
 
   /* --- Trascinamento e ridimensionamento --- */
   const giu = (e, f, modo) => {
-    if (!isAdmin) return;
+    if (!puo) return;
     e.preventDefault(); e.stopPropagation();
     const pt = punto(e);
     drag.current = {
@@ -1612,6 +1619,12 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
     <div>
       <div className="plan-bar mappa-bar no-print">
         {isAdmin && (
+          <button className={"btn sm modifica-toggle" + (modifica ? "" : " ghost")}
+            onClick={() => { if (modifica) setSel(null); setModifica(!modifica); mostra(modifica ? "Mappa bloccata" : "Ora puoi modificare la mappa"); }}>
+            {modifica ? "✓ Fine modifica" : "✎ Modifica mappa"}
+          </button>
+        )}
+        {puo && (
           <div className="mappa-aggiungi">
             <button className="btn sm" onClick={() => aggiungi("etichetta")}>+ Etichetta</button>
             <button className="btn ghost sm" onClick={() => aggiungi("cerchio")}>+ Cerchio</button>
@@ -1624,8 +1637,8 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
           </div>
         )}
         <div className="mappa-azioni">
-          {isAdmin && <button className="btn ghost sm" onClick={annulla} disabled={!storia.length} title="Annulla l'ultima modifica (Ctrl+Z)">↶<span className="lbl"> Indietro</span></button>}
-          {isAdmin && <button className="btn ghost sm" onClick={ripeti} disabled={!futuro.length} title="Rifai la modifica annullata (Ctrl+Y)"><span className="lbl">Avanti </span>↷</button>}
+          {puo && <button className="btn ghost sm" onClick={annulla} disabled={!storia.length} title="Annulla l'ultima modifica (Ctrl+Z)">↶<span className="lbl"> Indietro</span></button>}
+          {puo && <button className="btn ghost sm" onClick={ripeti} disabled={!futuro.length} title="Rifai la modifica annullata (Ctrl+Y)"><span className="lbl">Avanti </span>↷</button>}
           <span className="sep" />
           <button className="btn ghost sm" onClick={() => setZoom(z => Math.max(0.1, +(z - 0.05).toFixed(3)))}>−</button>
           <span className="num zoom-val">{Math.round(zoom * 100)}%</span>
@@ -1638,7 +1651,7 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
       </div>
 
       {vert && <p className="hint gira-tel">Sul telefono la sala è girata in verticale: l'ingresso è in basso a sinistra. Gira il telefono per vederla per lungo.</p>}
-      <div className={"mappa-wrap" + (vert ? " verticale" : "")} ref={wrapRef}
+      <div className={"mappa-wrap" + (vert ? " verticale" : "") + (puo ? " in-modifica" : " bloccata")} ref={wrapRef}
         style={vert ? { height: Math.round(MAPPA_W * zoom) + 4, minHeight: 0 }
           : mobile ? { height: Math.max(110, Math.min(Math.round(window.innerHeight * 0.62), Math.round(H * zoom) + 2)), minHeight: 0 } : undefined}>
         <div className="scaler" style={vert ? { width: Math.round(H * zoom), height: Math.round(MAPPA_W * zoom) }
@@ -1664,7 +1677,7 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
                   color: zona ? col.bg : col.testo
                 }}
                 onPointerDown={e => giu(e, f, "move")}
-                onClick={e => { e.stopPropagation(); setSel(f.id); }}>
+                onClick={e => { e.stopPropagation(); if (puo) setSel(f.id); }}>
                 {f.tipo === "transenna" ? (() => {
                   const n = moduliTransenna(f.w), mw = f.w / n, sb = [];
                   for (let x = 6; x < f.w - 3; x += 6) sb.push(x);
@@ -1695,7 +1708,7 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
                   <span className="txt" style={{ fontSize: f.font || 30 }}>{f.testo}</span>
                 )}
                 {zona && <span className="dim">{metriBrevi(f.w) + " × " + metriBrevi(f.h) + " m"}</span>}
-                {isAdmin && sel === f.id && (
+                {puo && sel === f.id && (
                   <span className="maniglia" onPointerDown={e => giu(e, f, "resize")} />
                 )}
               </div>
@@ -1705,7 +1718,7 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
         </div>
       </div>
 
-      {isAdmin && (
+      {puo && (
         <div className="split due" style={{ marginTop: 12 }}>
           <div className="panel no-print">
             <h2>Forma selezionata</h2>
