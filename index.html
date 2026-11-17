@@ -950,10 +950,12 @@ function useDati() {
   const salvaLocale = (extra) => { stato.current = { ...stato.current, ...extra }; scriviLocale(stato.current); };
   const imp = (nome) => db.collection(COL_IMPOSTAZIONI).doc(PREFISSO_DOC + nome);
   const docBozza = (id) => imp(id === "principale" ? "mappa" : "mappa_" + id);
-  const segnala = useCallback((e) => {
-    console.error(e);
-    setErrore("Firebase non ha accettato l'operazione: " + (e && e.message ? e.message : e));
+  /* l'avviso dice anche quale operazione Firebase ha rifiutato, così si capisce cosa non è stato salvato */
+  const segnalaCome = useCallback((cosa) => (e) => {
+    console.error(cosa, e);
+    setErrore("Firebase non ha accettato l'operazione (" + cosa + "): " + (e && e.message ? e.message : e));
   }, []);
+  const segnala = useCallback((e) => segnalaCome("lettura o salvataggio")(e), []);
 
   useEffect(() => {
     if (db) {
@@ -970,8 +972,8 @@ function useDati() {
             n: ((mv && mv.forme) || []).length }];
           setMappe(lista);
           return imp("mappe").set({ lista });
-        }).catch(segnala).then(() => setPronto(true));
-      }, e => { segnala(e); setPronto(true); });
+        }).catch(segnalaCome("creazione dell'elenco bozze")).then(() => setPronto(true));
+      }, e => { segnalaCome("lettura dell'elenco bozze")(e); setPronto(true); });
       const u2 = imp("mappaSfondo").onSnapshot(d => {
         const v = d.data();
         setSfondoMappa(v && v.img ? v.img : "");
@@ -1032,9 +1034,9 @@ function useDati() {
         const v = d.data();
         const m = adattaVecchiaMappa({ forme: (v && v.forme) || [], ratio: (v && v.ratio) || MAPPA_RATIO_DEF });
         setMappa({ forme: m.forme, ratio: m.ratio });
-        if (m.adattata && v) docBozza(bozzaId).set({ forme: m.forme, ratio: m.ratio }).catch(segnala);
+        if (m.adattata && v) docBozza(bozzaId).set({ forme: m.forme, ratio: m.ratio }).catch(segnalaCome("adattamento della bozza"));
         setBozzaPronta(bozzaId);
-      }, segnala);
+      }, e => { segnalaCome("apertura della bozza")(e); setBozzaPronta(bozzaId); });
     }
     const l = leggiLocale();
     const b = (l.bozze && l.bozze[bozzaId]) || (bozzaId === "principale" ? l.mappa : null) || { forme: [], ratio: MAPPA_RATIO_DEF };
@@ -1044,11 +1046,11 @@ function useDati() {
 
   const scriviIndice = (lista) => {
     setMappe(lista);
-    if (db) return imp("mappe").set({ lista: JSON.parse(JSON.stringify(lista)) }).catch(segnala);
+    if (db) return imp("mappe").set({ lista: JSON.parse(JSON.stringify(lista)) }).catch(segnalaCome("salvataggio dell'elenco bozze"));
     salvaLocale({ mappe: lista });
   };
   const scriviBozza = (id, dati) => {
-    if (db) return docBozza(id).set(dati).catch(segnala);
+    if (db) return docBozza(id).set(dati).catch(segnalaCome("salvataggio della mappa"));
     const l = leggiLocale();
     salvaLocale({ bozze: { ...(l.bozze || {}), [id]: dati } });
   };
@@ -1093,7 +1095,8 @@ function useDati() {
 
   const eliminaBozza = useCallback((id) => {
     scriviIndice(stato.current.mappe.filter(b => b.id !== id));
-    if (db) docBozza(id).delete().catch(segnala);
+    /* le regole di Firebase non permettono di cancellare documenti: la bozza si svuota e sparisce dall'elenco */
+    if (db) docBozza(id).set({ forme: [], eliminata: Date.now() }).catch(segnalaCome("eliminazione della bozza"));
     else { const l = leggiLocale(); const bz = { ...(l.bozze || {}) }; delete bz[id]; salvaLocale({ bozze: bz }); }
     if (stato.current.bozzaId === id) setBozzaId(null);
   }, []);
@@ -1142,6 +1145,7 @@ function useDati() {
   }, []);
 
   return { utenti, attivita, mappa, sfondoMappa, manodopera, salvaManodopera, finanze, finanzePronte, permessi, pronto, errore, cloud: !!db,
+    chiudiErrore: () => setErrore(""),
     mappe, bozzaId, bozzaPronta, apriBozza, creaBozza, rinominaBozza, segnaDefinitiva, eliminaBozza,
     salvaMappa, salvaSfondoMappa, salvaUtenti, salvaFinanze, salvaPermessi, log };
 }
@@ -1248,7 +1252,12 @@ function App() {
         </div>
       </header>
 
-      {D.errore && <div className="avviso-db no-print">⚠ {D.errore}</div>}
+      {D.errore && (
+        <div className="avviso-db no-print" style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+          <span style={{ flex: 1 }}>⚠ {D.errore}</span>
+          <button className="btn ghost sm" onClick={D.chiudiErrore} title="Chiudi l'avviso">×</button>
+        </div>
+      )}
 
       {/* ---------- AREA ---------- */}
       {vistaOk === "mappa" && (
