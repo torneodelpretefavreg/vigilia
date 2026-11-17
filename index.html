@@ -981,39 +981,39 @@ function useDati() {
       const u2 = imp("mappaSfondo").onSnapshot(d => {
         const v = d.data();
         setSfondoMappa(v && v.img ? v.img : "");
-      }, segnala);
+      }, segnalaCome("lettura della cartina"));
       const u3 = imp("utenti").onSnapshot({ includeMetadataChanges: true }, d => {
         const v = d.data();
         if (v && v.lista) setUtenti(v.lista);
-        else if (!d.metadata.fromCache) imp("utenti").set({ lista: UTENTI_DEFAULT }).catch(segnala);
-      }, segnala);
+        else if (!d.metadata.fromCache) imp("utenti").set({ lista: UTENTI_DEFAULT }).catch(segnalaCome("creazione degli utenti"));
+      }, segnalaCome("lettura degli utenti"));
       const u4 = imp("attivita").onSnapshot(d => {
         const v = d.data();
         setAttivita((v && v.lista) || []);
-      }, segnala);
+      }, segnalaCome("lettura del registro"));
       /* finanze: si considerano caricate solo quando arrivano dal server (o dalla cache se il documento c'è),
          così nessun salvataggio parte da uno stato vuoto e cancella le voci già inserite */
       const u5 = imp("finanze").onSnapshot({ includeMetadataChanges: true }, d => {
         const v = d.data();
         setFinanze({ voci: (v && v.voci) || [], soggetti: (v && v.soggetti) || [], enti: (v && v.enti) || null });
         if (d.exists || !d.metadata.fromCache) setFinanzePronte(true);
-      }, segnala);
+      }, segnalaCome("lettura di costi e ricavi"));
       const u6 = imp("permessi").onSnapshot({ includeMetadataChanges: true }, d => {
         const v = d.data();
         if (v && v.sezioni) setPermessi(v.sezioni);
-        else if (!d.metadata.fromCache) imp("permessi").set({ sezioni: PERMESSI_DEFAULT }).catch(segnala);
-      }, segnala);
+        else if (!d.metadata.fromCache) imp("permessi").set({ sezioni: PERMESSI_DEFAULT }).catch(segnalaCome("creazione dei permessi"));
+      }, segnalaCome("lettura dei permessi"));
       /* la Manodopera della Vigilia parte vuota: i dati si inseriscono a mano.
          Una copia dal Festival fatta in precedenza e mai modificata viene tolta. */
       const u7 = imp("manodopera").onSnapshot(d => {
         const v = d.data();
         if (v && v.copiataDalFestival) {
           setManodopera({ aree: [] });
-          imp("manodopera").set({ aree: [] }).catch(segnala);
+          imp("manodopera").set({ aree: [] }).catch(segnalaCome("azzeramento della manodopera"));
           return;
         }
         setManodopera({ aree: (v && v.aree) || [] });
-      }, segnala);
+      }, segnalaCome("lettura della manodopera"));
       return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); };
     }
     const l = leggiLocale();
@@ -1107,13 +1107,13 @@ function useDati() {
 
   const salvaSfondoMappa = useCallback((img) => {
     setSfondoMappa(img);
-    if (db) return imp("mappaSfondo").set({ img }).catch(segnala);
+    if (db) return imp("mappaSfondo").set({ img }).catch(segnalaCome("salvataggio della cartina"));
     salvaLocale({ sfondoMappa: img });
   }, []);
 
   const salvaManodopera = useCallback((aree) => {
     setManodopera({ aree });
-    if (db) return imp("manodopera").set(JSON.parse(JSON.stringify({ aree }))).catch(segnala);
+    if (db) return imp("manodopera").set(JSON.parse(JSON.stringify({ aree }))).catch(segnalaCome("salvataggio della manodopera"));
     salvaLocale({ manodopera: { aree } });
   }, []);
 
@@ -1133,14 +1133,14 @@ function useDati() {
     if (db) {
       const pulito = JSON.parse(JSON.stringify(next)); /* Firestore rifiuta i valori undefined */
       return imp("finanze").set(pulito)
-        .catch(e => { segnala(e); alert("Salvataggio non riuscito: " + (e && e.message ? e.message : e)); });
+        .catch(e => { segnalaCome("salvataggio di costi e ricavi")(e); alert("Salvataggio non riuscito: " + (e && e.message ? e.message : e)); });
     }
     salvaLocale({ finanze: next });
   }, [finanzePronte]);
 
   const salvaPermessi = useCallback((sezioni) => {
     setPermessi(sezioni);
-    if (db) return imp("permessi").set({ sezioni }).catch(segnala);
+    if (db) return imp("permessi").set({ sezioni }).catch(segnalaCome("salvataggio dei permessi"));
     salvaLocale({ permessi: sezioni });
   }, []);
 
