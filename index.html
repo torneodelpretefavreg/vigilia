@@ -1016,8 +1016,10 @@ function useDati(attivo, fbAdmin) {
       }, segnalaCome("lettura della cartina"));
       const u3 = imp("utenti").onSnapshot({ includeMetadataChanges: true }, d => {
         const v = d.data();
-        if (v && v.lista) { setUtenti(v.lista); setUtentiPronti(true); }
-        else if (!d.metadata.fromCache) setUtentiPronti(true);
+        if (v && v.lista) setUtenti(v.lista);
+        /* la copia salvata sul telefono può essere vecchia (senza gli utenti aggiunti dopo):
+           per controllare chi entra vale solo l'elenco confermato dal server */
+        if (!d.metadata.fromCache) setUtentiPronti(true);
         if (!(v && v.lista) && !d.metadata.fromCache && fbAdmin) imp("utenti").set({ lista: UTENTI_DEFAULT }).catch(segnalaCome("creazione degli utenti"));
       }, segnalaCome("lettura degli utenti"));
       const u4 = imp("attivita").onSnapshot(d => {
