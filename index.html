@@ -626,6 +626,7 @@
 <script src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -662,7 +663,12 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 
    (gianluca → gianluca). L'unica eccezione è l'admin qui sotto.
    ========================================================= */
 const ADMIN_USER = "admin";
-const ADMIN_PASS = "dado";
+/* Accesso vero a Firebase (le regole del database lo richiedono):
+   - l'admin entra con l'account Firebase dell'admin e la sua password;
+   - tutti gli altri entrano con il proprio nome e la password comune dello staff.
+   Le password si scelgono e si cambiano dalla console Firebase → Authentication. */
+const ADMIN_EMAIL = "davide.lodi18@gmail.com";
+const STAFF_EMAIL = "staff@festivalfabbrico.app";
 const UTENTI_DEFAULT = [{ nome: "admin", ruolo: "admin" }];
 const LS_UTENTE = "vigilia_utente";
 const norm = (s) => (s || "").trim().toLowerCase();
@@ -911,12 +917,34 @@ const FORME_NUOVE = {
 
 /* ---------- Persistenza ---------- */
 let db = null;
+let auth = null;
 if (FIREBASE_CONFIG.projectId) {
   try {
     firebase.initializeApp(FIREBASE_CONFIG);
     db = firebase.firestore();
     db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+    auth = firebase.auth ? firebase.auth() : null;
   } catch (e) { console.error(e); }
+}
+
+/* Stato dell'accesso a Firebase: undefined mentre si controlla, null se non si è entrati */
+function useAccesso() {
+  const [fbUser, setFbUser] = useState(auth ? undefined : null);
+  useEffect(() => {
+    if (!auth) return;
+    return auth.onAuthStateChanged(u => setFbUser(u || null));
+  }, []);
+  const email = fbUser && fbUser.email ? fbUser.email.toLowerCase() : "";
+  return { user: fbUser, admin: email === ADMIN_EMAIL, staff: !!fbUser };
+}
+
+/* messaggi chiari per gli errori di accesso */
+function erroreAccesso(e) {
+  const c = (e && e.code) || "";
+  if (/invalid-credential|wrong-password|invalid-login|user-not-found|invalid-email/.test(c)) return "Password non corretta.";
+  if (/too-many-requests/.test(c)) return "Troppi tentativi: aspetta qualche minuto e riprova.";
+  if (/network/.test(c)) return "Nessuna connessione: controlla la rete e riprova.";
+  return "Accesso non riuscito: " + ((e && e.message) || e);
 }
 
 function leggiLocale() {
@@ -931,7 +959,7 @@ const firma = () => ({ modificatoDa: UTENTE_CORRENTE ? UTENTE_CORRENTE.nome : "?
 /* =========================================================
    Hook dati
    ========================================================= */
-function useDati() {
+function useDati(attivo, fbAdmin) {
   const [utenti, setUtenti] = useState(UTENTI_DEFAULT);
   const [attivita, setAttivita] = useState([]);
   const [mappa, setMappa] = useState({ forme: [], ratio: MAPPA_RATIO_DEF });
@@ -962,6 +990,7 @@ function useDati() {
   const segnala = useCallback((e) => segnalaCome("lettura o salvataggio")(e), []);
 
   useEffect(() => {
+    if (db && !attivo) { setPronto(false); return; }
     if (db) {
       /* i valori di partenza si scrivono solo se il server conferma che il documento non c'è:
          una cache vuota non deve mai sovrascrivere i dati veri */
@@ -985,7 +1014,7 @@ function useDati() {
       const u3 = imp("utenti").onSnapshot({ includeMetadataChanges: true }, d => {
         const v = d.data();
         if (v && v.lista) setUtenti(v.lista);
-        else if (!d.metadata.fromCache) imp("utenti").set({ lista: UTENTI_DEFAULT }).catch(segnalaCome("creazione degli utenti"));
+        else if (!d.metadata.fromCache && fbAdmin) imp("utenti").set({ lista: UTENTI_DEFAULT }).catch(segnalaCome("creazione degli utenti"));
       }, segnalaCome("lettura degli utenti"));
       const u4 = imp("attivita").onSnapshot(d => {
         const v = d.data();
@@ -1001,7 +1030,7 @@ function useDati() {
       const u6 = imp("permessi").onSnapshot({ includeMetadataChanges: true }, d => {
         const v = d.data();
         if (v && v.sezioni) setPermessi(v.sezioni);
-        else if (!d.metadata.fromCache) imp("permessi").set({ sezioni: PERMESSI_DEFAULT }).catch(segnalaCome("creazione dei permessi"));
+        else if (!d.metadata.fromCache && fbAdmin) imp("permessi").set({ sezioni: PERMESSI_DEFAULT }).catch(segnalaCome("creazione dei permessi"));
       }, segnalaCome("lettura dei permessi"));
       /* la Manodopera della Vigilia parte vuota: i dati si inseriscono a mano.
          Una copia dal Festival fatta in precedenza e mai modificata viene tolta. */
@@ -1027,7 +1056,7 @@ function useDati() {
     setFinanzePronte(true);
     setPermessi(l.permessi || PERMESSI_DEFAULT);
     setPronto(true);
-  }, []);
+  }, [attivo]);
 
   /* --- bozza aperta: si ascolta solo il suo documento --- */
   useEffect(() => {
@@ -1187,13 +1216,29 @@ function useMobile(bp = 760) {
    App
    ========================================================= */
 function App() {
-  const D = useDati();
+  const A = useAccesso();
   const [utente, setUtente] = useState(() => { try { return JSON.parse(localStorage.getItem(LS_UTENTE)); } catch (e) { return null; } });
-  const isAdmin = !!utente && utente.ruolo === "admin";
+  const dentro = !auth || (!!A.user && !!utente);
+  const D = useDati(dentro, A.admin);
+  /* con Firebase i poteri da admin dipendono dall'account con cui si è entrati, non da quello che c'è nel browser */
+  const isAdmin = !!utente && (auth ? A.admin : utente.ruolo === "admin");
   UTENTE_CORRENTE = utente;
 
   const entra = (u) => { UTENTE_CORRENTE = u; localStorage.setItem(LS_UTENTE, JSON.stringify(u)); setUtente(u); };
-  const esci = () => { localStorage.removeItem(LS_UTENTE); UTENTE_CORRENTE = null; setUtente(null); };
+  const esci = () => {
+    localStorage.removeItem(LS_UTENTE); UTENTE_CORRENTE = null; setUtente(null);
+    if (auth) auth.signOut().catch(() => {});
+  };
+
+  /* chi entra con la password dello staff deve essere nell'elenco degli utenti */
+  const [fuori, setFuori] = useState("");
+  useEffect(() => {
+    if (!auth || !D.pronto || !utente || A.admin || !A.user) return;
+    if (norm(utente.nome) === ADMIN_USER || !D.utenti.some(u => norm(u.nome) === norm(utente.nome))) {
+      setFuori("Il nome " + utente.nome + " non è tra gli utenti: fattelo aggiungere dall'admin.");
+      esci();
+    }
+  }, [D.pronto, D.utenti, utente, A.admin, A.user]);
 
   const mobile = useMobile();
   const [tema, setTema] = useState(() => localStorage.getItem("vigilia_tema") || "scuro");
@@ -1205,8 +1250,9 @@ function App() {
   const [toast, setToast] = useState("");
   const mostra = (m) => { setToast(m); setTimeout(() => setToast(""), 2200); };
 
+  if (auth && A.user === undefined) return <div style={{ padding: 40 }} className="hint">Carico…</div>;
+  if (!dentro) return <Login utenti={D.utenti} onEntra={(u) => { setFuori(""); entra(u); }} avviso={fuori} />;
   if (!D.pronto) return <div style={{ padding: 40 }} className="hint">Carico…</div>;
-  if (!utente) return <Login utenti={D.utenti} onEntra={entra} />;
 
   const puoVedere = (k) => {
     const s = SEZIONI.find(x => x.k === k);
@@ -1315,7 +1361,10 @@ function App() {
         <div className="split due">
           <div className="panel">
             <h2>Utenti</h2>
-            <p className="hint">Ogni persona entra con il proprio nome: la password è il nome stesso, tutto minuscolo. Le password qui sotto sono visibili solo a te che sei admin.</p>
+            <p className="hint">
+              Ogni persona entra con il proprio nome, che deve essere in questo elenco, e con la <b>password dello staff</b>.
+              Chi ha il ruolo admin entra con la <b>password dell'admin</b>. Le due password si cambiano dalla console Firebase → Authentication.
+            </p>
             <Utenti utenti={D.utenti} onSalva={(lista, azione) => D.salvaUtenti(lista)
               .then(() => { D.log(azione); mostra("Utenti aggiornati"); })
               .catch(e => alert("Utente non salvato: Firebase ha rifiutato l'operazione.\n\n" + (e && e.message ? e.message : e)))} />
@@ -3304,37 +3353,66 @@ function Permessi({ permessi, utenti, onSalva }) {
 }
 
 /* ---------- Accesso ---------- */
-function Login({ utenti, onEntra }) {
+function Login({ utenti, onEntra, avviso }) {
   const [nome, setNome] = useState("");
   const [pw, setPw] = useState("");
   const [err, setErr] = useState("");
+  const [attesa, setAttesa] = useState(false);
 
-  const prova = () => {
+  /* senza Firebase (solo per prove in locale): password = nome, admin con "dado" */
+  const provaLocale = () => {
     const n = norm(nome);
-    if (!n) return setErr("Scrivi il tuo nome utente.");
-    if (n === ADMIN_USER) {
-      if (pw !== ADMIN_PASS) return setErr("Password non corretta.");
-      return onEntra({ nome: "admin", ruolo: "admin" });
-    }
+    if (n === ADMIN_USER) return pw === "dado" ? onEntra({ nome: "admin", ruolo: "admin" }) : setErr("Password non corretta.");
     const u = utenti.find(x => norm(x.nome) === n);
     if (!u) return setErr("Utente non riconosciuto. Fattelo creare dall'admin.");
-    if (norm(pw) !== norm(u.nome)) return setErr("La password è il tuo nome utente.");
+    if (norm(pw) !== norm(u.nome)) return setErr("Password non corretta.");
     onEntra({ nome: u.nome, ruolo: u.ruolo || "staff" });
+  };
+
+  const prova = async () => {
+    const n = nome.trim();
+    if (!n) return setErr("Scrivi il tuo nome.");
+    if (!pw) return setErr("Scrivi la password.");
+    if (!auth) return provaLocale();
+    setAttesa(true); setErr("");
+    try {
+      if (norm(n) === ADMIN_USER) {
+        await auth.signInWithEmailAndPassword(ADMIN_EMAIL, pw);
+        return onEntra({ nome: "admin", ruolo: "admin" });
+      }
+      /* prima la password dello staff; se non va, quella dell'admin (per chi ha il ruolo admin) */
+      try {
+        await auth.signInWithEmailAndPassword(STAFF_EMAIL, pw);
+        return onEntra({ nome: n, ruolo: "staff" });
+      } catch (e1) {
+        if (!/invalid-credential|wrong-password|invalid-login|user-not-found/.test((e1 && e1.code) || "")) throw e1;
+        await auth.signInWithEmailAndPassword(ADMIN_EMAIL, pw);
+        return onEntra({ nome: n, ruolo: "admin" });
+      }
+    } catch (e) {
+      setErr(erroreAccesso(e));
+    } finally {
+      setAttesa(false);
+    }
   };
 
   return (
     <div className="login">
       <div className="login-card">
         <h1 className="brand">Vigilia <span>di Natale</span><small>Area, staff e conti</small></h1>
-        <div className="field"><label>Nome utente</label>
+        {avviso && <p className="login-err" style={{ marginBottom: 10 }}>{avviso}</p>}
+        <div className="field"><label>Nome</label>
           <input autoFocus value={nome} onChange={e => { setNome(e.target.value); setErr(""); }}
-            onKeyDown={e => e.key === "Enter" && prova()} placeholder="es. gianluca" /></div>
+            onKeyDown={e => e.key === "Enter" && prova()} placeholder="es. gianluca" autoCapitalize="none" autoCorrect="off" spellCheck={false} /></div>
         <div className="field"><label>Password</label>
           <input type="password" value={pw} onChange={e => { setPw(e.target.value); setErr(""); }}
             onKeyDown={e => e.key === "Enter" && prova()} /></div>
-        <button className="btn block" style={{ marginTop: 8 }} onClick={prova}>Entra</button>
+        <button className="btn block" style={{ marginTop: 8 }} onClick={prova} disabled={attesa}>{attesa ? "Entro…" : "Entra"}</button>
         {err && <p className="login-err">{err}</p>}
-        <p className="hint" style={{ marginTop: 14 }}>La password è uguale al nome utente. Ogni modifica che fai resta firmata con il tuo nome.</p>
+        <p className="hint" style={{ marginTop: 14 }}>
+          {auth ? "Lo staff entra con il proprio nome e la password dello staff; l'admin con il nome admin e la sua password. Ogni modifica resta firmata con il tuo nome."
+            : "La password è uguale al nome utente."}
+        </p>
       </div>
     </div>
   );
@@ -3356,12 +3434,11 @@ function Utenti({ utenti, onSalva }) {
   return (
     <div>
       <table className="tab-cards">
-        <thead><tr><th>Utente</th><th>Password</th><th>Ruolo</th><th></th></tr></thead>
+        <thead><tr><th>Utente</th><th>Ruolo</th><th></th></tr></thead>
         <tbody>
           {utenti.map(u => (
             <tr key={u.nome}>
               <td data-label="Utente"><b>{u.nome}</b></td>
-              <td className="num" data-label="Password">{norm(u.nome) === ADMIN_USER ? ADMIN_PASS : norm(u.nome)}</td>
               <td data-label="Ruolo">{u.ruolo === "admin" ? <span className="ruolo">admin</span> : "staff"}</td>
               <td>
                 {norm(u.nome) !== ADMIN_USER && (
