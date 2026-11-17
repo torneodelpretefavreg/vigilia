@@ -961,6 +961,9 @@ const firma = () => ({ modificatoDa: UTENTE_CORRENTE ? UTENTE_CORRENTE.nome : "?
    ========================================================= */
 function useDati(attivo, fbAdmin) {
   const [utenti, setUtenti] = useState(UTENTI_DEFAULT);
+  /* l'elenco utenti è "pronto" solo quando arriva davvero da Firebase:
+     prima c'è solo quello di partenza (con il solo admin) e non va usato per controllare chi entra */
+  const [utentiPronti, setUtentiPronti] = useState(false);
   const [attivita, setAttivita] = useState([]);
   const [mappa, setMappa] = useState({ forme: [], ratio: MAPPA_RATIO_DEF });
   /* più bozze di mappa: un indice (nome, data, autore, definitiva) e un documento per ogni bozza.
@@ -990,7 +993,7 @@ function useDati(attivo, fbAdmin) {
   const segnala = useCallback((e) => segnalaCome("lettura o salvataggio")(e), []);
 
   useEffect(() => {
-    if (db && !attivo) { setPronto(false); return; }
+    if (db && !attivo) { setPronto(false); setUtentiPronti(false); return; }
     if (db) {
       /* i valori di partenza si scrivono solo se il server conferma che il documento non c'è:
          una cache vuota non deve mai sovrascrivere i dati veri */
@@ -1013,8 +1016,9 @@ function useDati(attivo, fbAdmin) {
       }, segnalaCome("lettura della cartina"));
       const u3 = imp("utenti").onSnapshot({ includeMetadataChanges: true }, d => {
         const v = d.data();
-        if (v && v.lista) setUtenti(v.lista);
-        else if (!d.metadata.fromCache && fbAdmin) imp("utenti").set({ lista: UTENTI_DEFAULT }).catch(segnalaCome("creazione degli utenti"));
+        if (v && v.lista) { setUtenti(v.lista); setUtentiPronti(true); }
+        else if (!d.metadata.fromCache) setUtentiPronti(true);
+        if (!(v && v.lista) && !d.metadata.fromCache && fbAdmin) imp("utenti").set({ lista: UTENTI_DEFAULT }).catch(segnalaCome("creazione degli utenti"));
       }, segnalaCome("lettura degli utenti"));
       const u4 = imp("attivita").onSnapshot(d => {
         const v = d.data();
@@ -1181,7 +1185,7 @@ function useDati(attivo, fbAdmin) {
     salvaLocale({ attivita: next });
   }, []);
 
-  return { utenti, attivita, mappa, sfondoMappa, manodopera, salvaManodopera, finanze, finanzePronte, permessi, pronto, errore, cloud: !!db,
+  return { utenti, utentiPronti: !db || utentiPronti, attivita, mappa, sfondoMappa, manodopera, salvaManodopera, finanze, finanzePronte, permessi, pronto, errore, cloud: !!db,
     chiudiErrore: () => setErrore(""),
     mappe, bozzaId, bozzaPronta, apriBozza, creaBozza, rinominaBozza, segnaDefinitiva, eliminaBozza,
     salvaMappa, salvaSfondoMappa, salvaUtenti, salvaFinanze, salvaPermessi, log };
@@ -1233,12 +1237,12 @@ function App() {
   /* chi entra con la password dello staff deve essere nell'elenco degli utenti */
   const [fuori, setFuori] = useState("");
   useEffect(() => {
-    if (!auth || !D.pronto || !utente || A.admin || !A.user) return;
+    if (!auth || !D.pronto || !D.utentiPronti || !utente || A.admin || !A.user) return;
     if (norm(utente.nome) === ADMIN_USER || !D.utenti.some(u => norm(u.nome) === norm(utente.nome))) {
       setFuori("Il nome " + utente.nome + " non è tra gli utenti: fattelo aggiungere dall'admin.");
       esci();
     }
-  }, [D.pronto, D.utenti, utente, A.admin, A.user]);
+  }, [D.pronto, D.utentiPronti, D.utenti, utente, A.admin, A.user]);
 
   const mobile = useMobile();
   const [tema, setTema] = useState(() => localStorage.getItem("vigilia_tema") || "scuro");
