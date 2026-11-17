@@ -570,6 +570,10 @@
     .area-card .intestazione{display:grid!important;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:10px;padding-bottom:0;text-align:center}
     .area-card .intestazione>span:first-child{display:none}
     /* moduli: al massimo due campi per riga */
+    .nuovo-utente{flex-wrap:wrap}
+    .nuovo-utente .nu-nome{flex:1 1 100%}
+    .nuovo-utente .field{max-width:none!important;flex:1 1 40%}
+    .nuovo-utente .btn{flex:1 1 40%;min-height:46px}
     .modal .row{flex-wrap:wrap}
     .modal .row>.field{flex:1 1 40%;min-width:0}
   }
@@ -1113,10 +1117,14 @@ function useDati() {
     salvaLocale({ manodopera: { aree } });
   }, []);
 
+  /* restituisce una promessa: chi chiama sa se il salvataggio è andato davvero a buon fine */
   const salvaUtenti = useCallback((lista) => {
+    const prima = stato.current.utenti;
     setUtenti(lista);
-    if (db) return imp("utenti").set({ lista }).catch(segnala);
+    if (db) return imp("utenti").set({ lista: JSON.parse(JSON.stringify(lista)) })
+      .catch(e => { setUtenti(prima); segnalaCome("salvataggio degli utenti")(e); throw e; });
     salvaLocale({ utenti: lista });
+    return Promise.resolve();
   }, []);
 
   const salvaFinanze = useCallback((next) => {
@@ -1308,7 +1316,9 @@ function App() {
           <div className="panel">
             <h2>Utenti</h2>
             <p className="hint">Ogni persona entra con il proprio nome: la password è il nome stesso, tutto minuscolo. Le password qui sotto sono visibili solo a te che sei admin.</p>
-            <Utenti utenti={D.utenti} onSalva={(lista, azione) => { D.salvaUtenti(lista); D.log(azione); mostra("Utenti aggiornati"); }} />
+            <Utenti utenti={D.utenti} onSalva={(lista, azione) => D.salvaUtenti(lista)
+              .then(() => { D.log(azione); mostra("Utenti aggiornati"); })
+              .catch(e => alert("Utente non salvato: Firebase ha rifiutato l'operazione.\n\n" + (e && e.message ? e.message : e)))} />
           </div>
 
           <div className="panel">
@@ -3365,9 +3375,10 @@ function Utenti({ utenti, onSalva }) {
           ))}
         </tbody>
       </table>
-      <div className="row" style={{ marginTop: 12, alignItems: "flex-end" }}>
-        <div className="field"><label>Nuovo utente</label>
-          <input value={nuovo} onChange={e => setNuovo(e.target.value)} onKeyDown={e => e.key === "Enter" && aggiungi()} placeholder="es. gianluca" /></div>
+      <div className="row nuovo-utente" style={{ marginTop: 12, alignItems: "flex-end" }}>
+        <div className="field nu-nome"><label>Nuovo utente</label>
+          <input value={nuovo} onChange={e => setNuovo(e.target.value)} onKeyDown={e => e.key === "Enter" && aggiungi()}
+            placeholder="es. gianluca" autoCapitalize="none" autoCorrect="off" spellCheck={false} /></div>
         <div className="field" style={{ maxWidth: 120 }}><label>Ruolo</label>
           <select value={ruolo} onChange={e => setRuolo(e.target.value)}>
             <option value="staff">Staff</option><option value="admin">Admin</option>
