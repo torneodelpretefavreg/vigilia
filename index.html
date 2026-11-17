@@ -1229,6 +1229,9 @@ function App() {
   const D = useDati(dentro, A.admin);
   /* con Firebase i poteri da admin dipendono dall'account con cui si è entrati, non da quello che c'è nel browser */
   const isAdmin = !!utente && (auth ? A.admin : utente.ruolo === "admin");
+  /* Area, Manodopera e Costi li può modificare chiunque possa vedere la sezione;
+     solo Impostazioni (utenti, permessi, registro) restano dell'admin */
+  const puoModificare = !!utente;
   UTENTE_CORRENTE = utente;
 
   const entra = (u) => { UTENTE_CORRENTE = u; localStorage.setItem(LS_UTENTE, JSON.stringify(u)); setUtente(u); };
@@ -1324,7 +1327,7 @@ function App() {
       {vistaOk === "mappa" && (
         <div style={{ marginTop: 16 }}>
           {!D.bozzaId || !D.mappe.some(b => b.id === D.bozzaId) ? (
-            <BozzeView mappe={D.mappe} isAdmin={isAdmin} onApri={D.apriBozza}
+            <BozzeView mappe={D.mappe} isAdmin={puoModificare} onApri={D.apriBozza}
               onNuova={(nome, daId) => D.creaBozza(nome, daId).then(id => {
                 D.log((daId ? "ha duplicato una bozza di mappa: " : "ha creato la bozza di mappa ") + nome);
                 mostra("Bozza " + nome + " creata"); return id;
@@ -1342,7 +1345,7 @@ function App() {
                 </div>
                 {D.bozzaPronta !== D.bozzaId
                   ? <p className="hint" style={{ padding: 20 }}>Carico la mappa…</p>
-                  : <MappaView key={D.bozzaId} nomeBozza={b.nome} mappa={D.mappa} sfondo={D.sfondoMappa} isAdmin={isAdmin} mobile={mobile}
+                  : <MappaView key={D.bozzaId} nomeBozza={b.nome} mappa={D.mappa} sfondo={D.sfondoMappa} isAdmin={puoModificare} mobile={mobile}
                       onSalva={(forme, ratio) => D.salvaMappa(forme, ratio)}
                       onSfondo={(img) => D.salvaSfondoMappa(img)}
                       log={(a) => D.log(a + " (" + b.nome + ")")} mostra={mostra} />}
@@ -1354,7 +1357,7 @@ function App() {
 
       {/* ---------- MANODOPERA ---------- */}
       {vistaOk === "manodopera" && (
-        <ManodoperaView aree={D.manodopera.aree || []} isAdmin={isAdmin}
+        <ManodoperaView aree={D.manodopera.aree || []} isAdmin={puoModificare}
           onSalva={(aree) => D.salvaManodopera(aree)} log={D.log} mostra={mostra} />
       )}
 
