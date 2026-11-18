@@ -391,6 +391,33 @@
   .mappa-azioni .sep{width:6px}
   .zoom-val{min-width:44px;text-align:center}
   .gira-tel{font-size:12px;margin:0 0 6px}
+  .mano-schede{display:flex;gap:6px;margin-bottom:12px;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:4px}
+  .mano-schede button{flex:1;padding:10px 12px;border-radius:9px;font-weight:700;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap}
+  .mano-schede button.on{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+  .mano-conta{font:600 11px "JetBrains Mono",monospace;padding:2px 7px;border-radius:99px;background:var(--surface-2);border:1px solid var(--line)}
+  .mano-conta.ko{color:var(--rosso);border-color:rgba(228,91,109,.45)}
+  .presenti-testo{width:100%;min-height:96px;resize:vertical;font:inherit;margin-top:8px}
+  .presenti-testa{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .presenti-cerca{flex:1 1 160px;max-width:260px;margin-left:auto}
+  .presenti-lista{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px;margin-top:12px}
+  .presente{border:1px solid var(--line);border-radius:10px;padding:9px 10px;background:var(--surface-2);display:flex;flex-direction:column;gap:6px}
+  .presente.libero{border-color:rgba(228,91,109,.45)}
+  .presente-testa{display:flex;align-items:center;gap:6px}
+  .presente-nome{flex:1;min-width:0;text-align:left;font-weight:700;font-size:15px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .badge-libero{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--rosso)}
+  .presente-nota{font-size:12px;color:var(--muted)}
+  .presente-posti{display:flex;flex-wrap:wrap;gap:4px}
+  .posto{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:3px 4px 3px 7px;border:1px solid;border-radius:99px;background:var(--surface)}
+  .posto i{width:7px;height:7px;border-radius:50%;display:inline-block}
+  .posto button{font-size:14px;line-height:1;padding:0 4px;color:var(--muted)}
+  .presente-colloca{width:100%;font-size:13px;padding:7px 8px}
+  .avviso-soft{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--amber-soft);border:1px solid var(--amber);border-radius:10px;padding:10px 12px;margin:10px 0;font-size:13px}
+  @media(max-width:760px){
+    .presenti-lista{grid-template-columns:minmax(0,1fr)}
+    .presenti-cerca{max-width:none}
+    .presente-colloca{min-height:42px;font-size:15px}
+    .posto{font-size:13px}
+  }
   .bozze{max-width:820px}
   .bozze-testa{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap}
   .bozze-testa h2,.bozza-testa h2{font-family:"Bricolage Grotesque",sans-serif;font-size:18px;margin:0 0 4px}
@@ -1048,7 +1075,7 @@ function useDati(attivo, fbAdmin) {
           imp("manodopera").set({ aree: [] }).catch(segnalaCome("azzeramento della manodopera"));
           return;
         }
-        setManodopera({ aree: (v && v.aree) || [] });
+        setManodopera({ aree: (v && v.aree) || [], presenti: (v && v.presenti) || [] });
       }, segnalaCome("lettura della manodopera"));
       return () => { u1(); u2(); u3(); u4(); u5(); u6(); u7(); };
     }
@@ -1147,10 +1174,14 @@ function useDati(attivo, fbAdmin) {
     salvaLocale({ sfondoMappa: img });
   }, []);
 
-  const salvaManodopera = useCallback((aree) => {
-    setManodopera({ aree });
-    if (db) return imp("manodopera").set(JSON.parse(JSON.stringify({ aree }))).catch(segnalaCome("salvataggio della manodopera"));
-    salvaLocale({ manodopera: { aree } });
+  /* aree e mansioni, più l'elenco dei presenti (chi c'è, da collocare nelle mansioni) */
+  const salvaManodopera = useCallback((aree, presenti) => {
+    const cur = stato.current.manodopera || {};
+    const dati = { aree: aree !== undefined ? aree : (cur.aree || []), presenti: presenti !== undefined ? presenti : (cur.presenti || []) };
+    stato.current = { ...stato.current, manodopera: dati };
+    setManodopera(dati);
+    if (db) return imp("manodopera").set(JSON.parse(JSON.stringify(dati))).catch(segnalaCome("salvataggio della manodopera"));
+    salvaLocale({ manodopera: dati });
   }, []);
 
   /* restituisce una promessa: chi chiama sa se il salvataggio è andato davvero a buon fine */
@@ -1357,8 +1388,9 @@ function App() {
 
       {/* ---------- MANODOPERA ---------- */}
       {vistaOk === "manodopera" && (
-        <ManodoperaView aree={D.manodopera.aree || []} isAdmin={puoModificare}
-          onSalva={(aree) => D.salvaManodopera(aree)} log={D.log} mostra={mostra} />
+        <ManodoperaView aree={D.manodopera.aree || []} presenti={D.manodopera.presenti || []} isAdmin={puoModificare}
+          onSalva={(aree) => D.salvaManodopera(aree)} onSalvaPresenti={(lista, aree) => D.salvaManodopera(aree, lista)}
+          log={D.log} mostra={mostra} />
       )}
 
       {/* ---------- COSTI & RICAVI ---------- */}
@@ -2072,8 +2104,11 @@ function MappaView({ mappa, sfondo, isAdmin, onSalva, onSfondo, log, mostra, mob
 }
 
 /* ---------- Manodopera ---------- */
-function ManodoperaView({ aree, isAdmin, onSalva, log, mostra }) {
+function ManodoperaView({ aree, presenti, isAdmin, onSalva, onSalvaPresenti, log, mostra }) {
   const [nuovaArea, setNuovaArea] = useState("");
+  /* due schede: l'organico per aree e mansioni, e l'elenco di chi c'è */
+  const [scheda, setScheda] = useState(() => { try { return localStorage.getItem("vigilia_mano_scheda") || "organico"; } catch (e) { return "organico"; } });
+  const vai = (k) => { setScheda(k); try { localStorage.setItem("vigilia_mano_scheda", k); } catch (e) { } };
   const [mostraFasce, setMostraFasce] = useState(true);
   const [turno, setTurno] = useState(() => {
     try {
@@ -2189,6 +2224,24 @@ function ManodoperaView({ aree, isAdmin, onSalva, log, mostra }) {
     }
     return { slot, senza };
   }, [aree]);
+
+  /* --- dove è collocato ciascun nome --- */
+  const collocazioni = useMemo(() => {
+    const c = new Map();
+    aree.forEach(a => (a.mansioni || []).forEach(m => personeDi(m).forEach((p, i) => {
+      const k = norm(p.nome); if (!k) return;
+      if (!c.has(k)) c.set(k, []);
+      c.get(k).push({ a, m, i, p });
+    })));
+    return c;
+  }, [aree]);
+  const daCollocare = presenti.filter(x => !collocazioni.has(norm(x.nome)));
+  const fuoriElenco = useMemo(() => {
+    const inElenco = new Set(presenti.map(x => norm(x.nome)));
+    const visti = new Map();
+    collocazioni.forEach((v, k) => { if (!inElenco.has(k)) visti.set(k, v[0].p.nome.trim()); });
+    return Array.from(visti.values());
+  }, [collocazioni, presenti]);
 
   /* --- elenco per persona: il turno di ciascuno --- */
   const perPersona = useMemo(() => {
@@ -2352,6 +2405,22 @@ function ManodoperaView({ aree, isAdmin, onSalva, log, mostra }) {
 
   return (
     <div style={{ marginTop: 16 }}>
+      <div className="mano-schede no-print">
+        <button className={scheda === "organico" ? "on" : ""} onClick={() => vai("organico")}>Organico</button>
+        <button className={scheda === "presenti" ? "on" : ""} onClick={() => vai("presenti")}>
+          Elenco presenti <span className="mano-conta">{presenti.length}</span>
+          {daCollocare.length > 0 && <span className="mano-conta ko" title="Da collocare">{daCollocare.length} da collocare</span>}
+        </button>
+      </div>
+
+      {scheda === "presenti" ? (
+        <Presenti presenti={presenti} aree={aree} collocazioni={collocazioni} fuoriElenco={fuoriElenco} puo={isAdmin}
+          turno={turno} onSalva={onSalvaPresenti} log={log} mostra={mostra} />
+      ) : (<>
+      <datalist id="presenti-da-collocare">
+        {daCollocare.map(x => <option key={x.id} value={x.nome} />)}
+        {presenti.filter(x => collocazioni.has(norm(x.nome))).map(x => <option key={"c" + x.id} value={x.nome} />)}
+      </datalist>
       <div className="plan-bar no-print">
         <div className="stats stats-mano">
           <div className="stat"><b className="num">{totale.rich}</b><i>richiesti</i></div>
@@ -2447,7 +2516,7 @@ function ManodoperaView({ aree, isAdmin, onSalva, log, mostra }) {
                       );
                     })}
                     <div className="persona-riga aggiungi">
-                      <input className="add-persona" placeholder="+ persona"
+                      <input className="add-persona" placeholder={daCollocare.length ? "+ persona (scegli dall'elenco o scrivi)" : "+ persona"} list="presenti-da-collocare"
                         onKeyDown={e => { if (e.key === "Enter") { aggiungiPersona(a, m, e.target.value); e.target.value = ""; } }}
                         onBlur={e => { if (e.target.value.trim()) { aggiungiPersona(a, m, e.target.value); e.target.value = ""; } }} />
                       {(turno.dalle || turno.alle) && (
@@ -2537,6 +2606,182 @@ function ManodoperaView({ aree, isAdmin, onSalva, log, mostra }) {
           </div>
         </div>
       )}
+      </>)}
+    </div>
+  );
+}
+
+/* ---------- Elenco presenti: tutti i nomi di chi c'è, poi si collocano nelle mansioni ---------- */
+function Presenti({ presenti, aree, collocazioni, fuoriElenco, puo, turno, onSalva, log, mostra }) {
+  const [testo, setTesto] = useState("");
+  const [filtro, setFiltro] = useState("tutti");
+  const [cerca, setCerca] = useState("");
+
+  /* "Mario Rossi - 333 123 4567" → nome + nota */
+  const leggiRiga = (r) => {
+    const m = r.match(/^(.*?)\s+[-–—]\s+(.*)$/) || r.match(/^(.*?)\s*[,;\t]\s*(.*)$/);
+    return m ? { nome: m[1].trim(), nota: m[2].trim() } : { nome: r.trim(), nota: "" };
+  };
+
+  const aggiungi = () => {
+    const righe = testo.split(/\n+/).map(r => r.trim()).filter(Boolean);
+    if (!righe.length) return;
+    const usati = new Set(presenti.map(x => norm(x.nome)));
+    const nuovi = [], doppi = [];
+    righe.forEach(r => {
+      const { nome, nota } = leggiRiga(r);
+      if (!nome) return;
+      if (usati.has(norm(nome))) { doppi.push(nome); return; }
+      usati.add(norm(nome));
+      nuovi.push({ id: uid(), nome, nota });
+    });
+    if (nuovi.length) {
+      onSalva([...presenti, ...nuovi]);
+      log("ha aggiunto all'elenco presenti " + (nuovi.length === 1 ? nuovi[0].nome : nuovi.length + " persone"));
+    }
+    setTesto("");
+    mostra((nuovi.length ? nuovi.length + (nuovi.length === 1 ? " persona aggiunta" : " persone aggiunte") : "Nessun nome nuovo")
+      + (doppi.length ? " · già in elenco: " + doppi.join(", ") : ""));
+  };
+
+  const importaFuori = () => {
+    const nuovi = fuoriElenco.map(nome => ({ id: uid(), nome, nota: "" }));
+    onSalva([...presenti, ...nuovi]);
+    log("ha aggiunto all'elenco presenti " + nuovi.length + " persone già nelle mansioni");
+    mostra(nuovi.length + " aggiunte all'elenco");
+  };
+
+  /* collocare: la persona entra nella mansione con il turno predefinito */
+  const colloca = (x, valore) => {
+    if (!valore) return;
+    const [aid, mid] = valore.split("|");
+    const a = aree.find(z => z.id === aid); if (!a) return;
+    const m = (a.mansioni || []).find(z => z.id === mid); if (!m) return;
+    if (personeDi(m).some(p => norm(p.nome) === norm(x.nome))) return mostra(x.nome + " è già in " + m.nome);
+    const nuova = { nome: x.nome, dalle: turno.dalle || "", alle: turno.alle || "" };
+    const next = aree.map(z => z.id !== aid ? z : {
+      ...z, mansioni: (z.mansioni || []).map(w => w.id !== mid ? w : { ...w, persone: [...personeDi(w), nuova] })
+    });
+    onSalva(presenti, next);
+    log("ha collocato " + x.nome + " in " + m.nome + " · " + a.nome);
+    mostra(x.nome + " → " + m.nome);
+  };
+
+  const togliDa = (x, c) => {
+    const next = aree.map(z => z.id !== c.a.id ? z : {
+      ...z, mansioni: (z.mansioni || []).map(w => w.id !== c.m.id ? w : { ...w, persone: personeDi(w).filter(p => norm(p.nome) !== norm(x.nome)) })
+    });
+    onSalva(presenti, next);
+    log("ha tolto " + x.nome + " da " + c.m.nome + " · " + c.a.nome);
+  };
+
+  const rinomina = (x) => {
+    const n = prompt("Nome:", x.nome);
+    if (n === null) return;
+    const nome = n.trim(); if (!nome || nome === x.nome) return;
+    if (presenti.some(y => y.id !== x.id && norm(y.nome) === norm(nome))) return alert(nome + " è già nell'elenco.");
+    const nota = prompt("Nota (telefono, disponibilità…), facoltativa:", x.nota || "");
+    const lista = presenti.map(y => y.id === x.id ? { ...y, nome, nota: nota === null ? y.nota : nota.trim() } : y);
+    /* il nuovo nome vale anche nelle mansioni dove è già collocato */
+    const next = aree.map(z => ({ ...z, mansioni: (z.mansioni || []).map(w => ({
+      ...w, persone: personeDi(w).map(p => norm(p.nome) === norm(x.nome) ? { ...p, nome } : p) })) }));
+    onSalva(lista, next);
+    log("ha rinominato " + x.nome + " in " + nome + " nell'elenco presenti");
+  };
+
+  const togli = (x) => {
+    const c = collocazioni.get(norm(x.nome)) || [];
+    if (!confirm("Togliere " + x.nome + " dall'elenco dei presenti?" + (c.length ? "\n\nViene tolto anche da: " + c.map(z => z.m.nome).join(", ") + "." : ""))) return;
+    const next = c.length ? aree.map(z => ({ ...z, mansioni: (z.mansioni || []).map(w => ({
+      ...w, persone: personeDi(w).filter(p => norm(p.nome) !== norm(x.nome)) })) })) : undefined;
+    onSalva(presenti.filter(y => y.id !== x.id), next);
+    log("ha tolto " + x.nome + " dall'elenco presenti");
+  };
+
+  const mansioni = [];
+  aree.forEach(a => (a.mansioni || []).forEach(m => mansioni.push({ a, m })));
+
+  const q = norm(cerca);
+  const lista = presenti
+    .filter(x => !q || norm(x.nome).includes(q) || norm(x.nota || "").includes(q))
+    .filter(x => filtro === "tutti" || (filtro === "liberi") === !collocazioni.has(norm(x.nome)))
+    .slice().sort((u, v) => u.nome.localeCompare(v.nome, "it"));
+  const nLiberi = presenti.filter(x => !collocazioni.has(norm(x.nome))).length;
+
+  return (
+    <div>
+      {puo && (
+        <div className="panel no-print">
+          <h2>Aggiungi presenti</h2>
+          <p className="hint">Scrivi o incolla i nomi, <b>uno per riga</b>. Se vuoi aggiungi una nota dopo un trattino, ad esempio <i>Mario Rossi - 333 1234567</i>. I nomi già in elenco vengono saltati.</p>
+          <textarea className="presenti-testo" rows={4} value={testo} onChange={e => setTesto(e.target.value)}
+            placeholder={"Mario Rossi\nGiulia Bianchi - solo fino alle 23\nLuca"} />
+          <button className="btn block" style={{ marginTop: 8 }} onClick={aggiungi} disabled={!testo.trim()}>Aggiungi all'elenco</button>
+        </div>
+      )}
+
+      {fuoriElenco.length > 0 && puo && (
+        <div className="avviso-soft no-print">
+          {fuoriElenco.length === 1 ? "1 persona è" : fuoriElenco.length + " persone sono"} già nelle mansioni ma non nell'elenco: {fuoriElenco.join(", ")}.
+          <button className="btn ghost sm" onClick={importaFuori}>Aggiungile all'elenco</button>
+        </div>
+      )}
+
+      <div className="panel">
+        <div className="presenti-testa">
+          <h2 style={{ margin: 0 }}>Presenti <span className="num" style={{ color: "var(--muted)" }}>{presenti.length}</span></h2>
+          <input className="presenti-cerca" value={cerca} onChange={e => setCerca(e.target.value)} placeholder="Cerca…" />
+        </div>
+        <div className="filtri" style={{ marginTop: 10 }}>
+          <button className={"chip" + (filtro === "tutti" ? " on" : "")} onClick={() => setFiltro("tutti")}>Tutti {presenti.length}</button>
+          <button className={"chip" + (filtro === "liberi" ? " on" : "")} onClick={() => setFiltro("liberi")}>Da collocare {nLiberi}</button>
+          <button className={"chip" + (filtro === "collocati" ? " on" : "")} onClick={() => setFiltro("collocati")}>Collocati {presenti.length - nLiberi}</button>
+        </div>
+
+        {presenti.length === 0 && <p className="hint" style={{ marginTop: 12 }}>L'elenco è vuoto. Aggiungi qui sopra i nomi di chi ci sarà, poi collocali nelle mansioni.</p>}
+        {presenti.length > 0 && lista.length === 0 && <p className="hint" style={{ marginTop: 12 }}>Nessuno corrisponde.</p>}
+
+        <div className="presenti-lista">
+          {lista.map(x => {
+            const c = collocazioni.get(norm(x.nome)) || [];
+            return (
+              <div key={x.id} className={"presente" + (c.length ? "" : " libero")}>
+                <div className="presente-testa">
+                  <button className="presente-nome" onClick={() => puo && rinomina(x)} title={puo ? "Modifica nome e nota" : ""}>{x.nome}</button>
+                  {!c.length && <span className="badge-libero">da collocare</span>}
+                  {puo && <button className="togli" title="Togli dall'elenco" onClick={() => togli(x)}>×</button>}
+                </div>
+                {x.nota && <div className="presente-nota">{x.nota}</div>}
+                {c.length > 0 && (
+                  <div className="presente-posti">
+                    {c.map((z, i) => (
+                      <span key={i} className="posto" style={{ borderColor: colore(z.a.colore).bg }}>
+                        <i style={{ background: colore(z.a.colore).bg }} />
+                        {z.a.nome} › {z.m.nome}{fasciaTxt(z.p) ? " · " + fasciaTxt(z.p) : ""}
+                        {puo && <button title="Togli da questa mansione" onClick={() => togliDa(x, z)}>×</button>}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {puo && mansioni.length > 0 && (
+                  <select className="presente-colloca" value="" onChange={e => colloca(x, e.target.value)}>
+                    <option value="">{c.length ? "+ Colloca anche in…" : "Colloca in…"}</option>
+                    {aree.filter(a => (a.mansioni || []).length).map(a => (
+                      <optgroup key={a.id} label={a.nome}>
+                        {(a.mansioni || []).map(m => {
+                          const pres = personeDi(m).length, rich = m.richiesti || 0;
+                          return <option key={m.id} value={a.id + "|" + m.id}>{m.nome} ({pres}/{rich}{rich > pres ? ", mancano " + (rich - pres) : ""})</option>;
+                        })}
+                      </optgroup>
+                    ))}
+                  </select>
+                )}
+                {puo && mansioni.length === 0 && !c.length && <p className="hint" style={{ margin: "6px 0 0", fontSize: 12 }}>Crea prima le aree e le mansioni nella scheda Organico.</p>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
